@@ -2,33 +2,70 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/logo.jpeg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A simple, premium Playschool Attendance portal for teachers to mark and owners to track daily attendance." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
     <title>My Chhota School - Attendance Portal</title>
-    <!-- Google Identity Services script -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- Google Fonts: Plus Jakarta Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- PWA Manifest -->
+    <meta name="description" content="A simple, premium Playschool Attendance portal for teachers to mark and owners to track daily attendance." />
+
+    <!-- Favicons / PWA -->
+    <link rel="icon" type="image/jpeg" href="/logo.jpeg" />
+    <link rel="apple-touch-icon" href="/logo.jpeg" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#6366f1" />
-    <link rel="apple-touch-icon" href="/logo.jpeg" />
+
+    <!-- Open Graph / Social preview -->
+    <meta property="og:title" content="My Chhota School - Attendance Portal" />
+    <meta property="og:description" content="A simple, premium Playschool Attendance portal for teachers to mark and owners to track daily attendance." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.jpeg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+      /* Prevents a flash of unstyled white screen before React mounts */
+      html, body { margin: 0; padding: 0; background: #fafafa; }
+      #root {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      }
+      #root:empty::before {
+        content: '';
+        width: 32px;
+        height: 32px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
+
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then((reg) => console.log('Service Worker registered:', reg.scope))
             .catch((err) => console.log('Service Worker registration failed:', err));
         });
       }
     </script>
   </body>
 </html>
-
