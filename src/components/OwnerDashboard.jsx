@@ -667,7 +667,10 @@ export default function OwnerDashboard({ user, onLogout }) {
         <div>
           {/* Add Holiday Card */}
           <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>Add Holiday Date</h3>
+            <h3 style={{ marginBottom: '4px' }}>Add Holiday Date</h3>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+              📅 Select date in <strong>dd-mm-yyyy</strong> format &nbsp;|&nbsp; Note: All <strong>Sundays are automatically holidays</strong> and don't need to be added here.
+            </p>
             <form onSubmit={handleAddHoliday} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '150px' }}>
                 <input

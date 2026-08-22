@@ -112,6 +112,21 @@ export default function TeacherDashboard({ user, onLogout }) {
       });
       const dateStatus = await statusFetch.json();
 
+      // C. Sunday override — auto-holiday, no DB entry needed
+      const dayOfWeek = new Date(selectedYear, selectedMonth - 1, day).getDay();
+      if (dayOfWeek === 0 && !dateStatus.is_holiday) {
+        setDayStatus({
+          submitted: false,
+          markedBy: '',
+          timestamp: '',
+          isLocked: true,
+          isHoliday: true,
+          holidayDescription: 'Sunday – Weekly Holiday'
+        });
+        setAttendance({});
+        return; // skip remaining state updates
+      }
+
       if (dateStatus.is_holiday) {
         setDayStatus({
           submitted: false,
@@ -524,8 +539,9 @@ export default function TeacherDashboard({ user, onLogout }) {
               const dateStr = formatDateString(selectedYear, selectedMonth, day);
               
               // Color coding
-              const isHoliday = monthHolidays.some(h => h.date === dateStr);
-              const isMarked = monthLogs.some(l => l.date === dateStr);
+              const isSunday = new Date(selectedYear, selectedMonth - 1, day).getDay() === 0;
+              const isHoliday = isSunday || monthHolidays.some(h => h.date === dateStr);
+              const isMarked = !isSunday && monthLogs.some(l => l.date === dateStr);
               const localTodayStr = (() => {
                 const d = new Date();
                 return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -612,11 +628,14 @@ export default function TeacherDashboard({ user, onLogout }) {
           {/* HOLIDAY SECTION */}
           {dayStatus.isHoliday ? (
             <div className="alert alert-warning" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>
-              🎉 This day is marked as a Holiday: <strong>{dayStatus.holidayDescription}</strong>. Attendance roll is disabled.
+              {dayStatus.holidayDescription === 'Sunday – Weekly Holiday'
+                ? '🌅 Sunday – This is a weekly holiday. Attendance roll is disabled.'
+                : <>🎉 This day is marked as a Holiday: <strong>{dayStatus.holidayDescription}</strong>. Attendance roll is disabled.</> }
             </div>
           ) : (
             <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>Mark as Holiday</h3>
+              <h3 style={{ fontSize: '16px', marginBottom: '4px' }}>Mark as Holiday</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>Enter a reason — date is automatically the selected day.</p>
               <form onSubmit={handleAddHoliday} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <input
