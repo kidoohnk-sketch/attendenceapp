@@ -216,8 +216,9 @@ export default function OwnerDashboard({ user, onLogout }) {
         name: student.name,
         active: newActiveState
       });
-      setSuccess(`Student "${student.name}" status updated successfully!`);
+      setSuccess(`Student "${student.name}" ${newActiveState === 0 ? 'removed from' : 'rejoined'} the roster.`);
       await loadStudents();
+      if (activeTab === 'monthly') await loadMonthlyReport();
     } catch (err) {
       setError('Failed to toggle status: ' + err.message);
     } finally {
@@ -546,6 +547,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                     <th>Absent Days</th>
                     <th>Total School Days</th>
                     <th>Attendance %</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -570,6 +572,19 @@ export default function OwnerDashboard({ user, onLogout }) {
                         <td>{student.total_days}</td>
                         <td>
                           <span className={`badge ${badgeClass}`}>{percent}%</span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStudentActive({ id: student.student_id, name: student.name, active: student.active })}
+                            className={`btn ${student.active ? 'btn-danger' : 'btn-success'}`}
+                            style={{ minHeight: '30px', padding: '0 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                            disabled={updatingStudent === student.student_id}
+                          >
+                            {updatingStudent === student.student_id
+                              ? '...'
+                              : student.active ? '✕ Remove' : '✓ Rejoin'}
+                          </button>
                         </td>
                       </tr>
                     );
