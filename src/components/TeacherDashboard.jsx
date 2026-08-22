@@ -303,6 +303,34 @@ export default function TeacherDashboard({ user, onLogout }) {
       {/* LEVEL 1: SELECT MONTH (Default Homepage) */}
       {!selectedMonth && (
         <div>
+          {/* Add Student — always visible at top */}
+          <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '15px', marginBottom: '10px' }}>➕ Add Student</h3>
+            <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter student's full name"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  style={{ padding: '8px 12px', fontSize: '14px', minHeight: '38px' }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
+                disabled={addingStudent}
+              >
+                {addingStudent ? 'Adding...' : 'Add Student'}
+              </button>
+            </form>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginBottom: 0 }}>
+              Once added, a student will appear on every day's roll call until removed.
+            </p>
+          </div>
+
           {/* Year selector at top */}
           <div className="card" style={{ padding: '16px', marginBottom: '20px', textAlign: 'center' }}>
             <h2 style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '10px' }}>Select Year</h2>
@@ -362,7 +390,36 @@ export default function TeacherDashboard({ user, onLogout }) {
 
       {/* LEVEL 2: CALENDAR DAYS GRID (For selected month) */}
       {selectedMonth && !selectedDay && (
-        <div className="card">
+        <div>
+          {/* Add Student — also visible on calendar view */}
+          <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '15px', marginBottom: '10px' }}>➕ Add Student</h3>
+            <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter student's full name"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  style={{ padding: '8px 12px', fontSize: '14px', minHeight: '38px' }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
+                disabled={addingStudent}
+              >
+                {addingStudent ? 'Adding...' : 'Add Student'}
+              </button>
+            </form>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginBottom: 0 }}>
+              Once added, a student will appear on every day's roll call until removed.
+            </p>
+          </div>
+
+          <div className="card">
           <div className="view-header" style={{ marginBottom: '20px' }}>
             <button onClick={handleBackToMonths} className="btn btn-secondary" style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}>
               ← Back to Months
@@ -467,6 +524,7 @@ export default function TeacherDashboard({ user, onLogout }) {
               <span>Holiday</span>
             </div>
           </div>
+          </div>
         </div>
       )}
 
@@ -514,9 +572,9 @@ export default function TeacherDashboard({ user, onLogout }) {
           {/* ATTENDANCE ROLL SHEET (Only if NOT Holiday) */}
           {!dayStatus.isHoliday && (
             <div>
-              {/* Quick Add Student */}
+              {/* Quick Add Student — always accessible, students are global */}
               <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>Add Student</h3>
+                <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>➕ Add Student</h3>
                 <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <input
@@ -526,18 +584,20 @@ export default function TeacherDashboard({ user, onLogout }) {
                       value={newStudentName}
                       onChange={(e) => setNewStudentName(e.target.value)}
                       style={{ padding: '8px 12px', fontSize: '14px', minHeight: '38px' }}
-                      disabled={dayStatus.isLocked}
                     />
                   </div>
                   <button 
                     type="submit" 
                     className="btn btn-primary" 
                     style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
-                    disabled={addingStudent || dayStatus.isLocked}
+                    disabled={addingStudent}
                   >
-                    {addingStudent ? 'Adding...' : 'Add'}
+                    {addingStudent ? 'Adding...' : 'Add Student'}
                   </button>
                 </form>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginBottom: 0 }}>
+                  Once added, a student will appear on every day's roll call until removed.
+                </p>
               </div>
 
               {/* Attendance lock status info */}
