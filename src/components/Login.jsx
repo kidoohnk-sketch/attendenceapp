@@ -624,14 +624,7 @@ export default function Login({ onLoginSuccess }) {
 
 
 
-        <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', color: 'var(--text-muted)' }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
-          <span style={{ padding: '0 10px', fontSize: '13px', fontWeight: '500' }}>OR</span>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
-        </div>
 
-        {/* Google Sign-In Container */}
-        <div id="google-btn-container" style={{ width: '100%', minHeight: '40px', marginBottom: '12px' }}></div>
 
       </div>
     </div>
