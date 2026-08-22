@@ -491,7 +491,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               >
-                {[2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                {[2026, 2027, 2028, 2029, 2030].map(y => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
@@ -501,7 +501,9 @@ export default function OwnerDashboard({ user, onLogout }) {
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
               >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+                {Array.from({ length: 12 }, (_, i) => i + 1)
+                  .filter(m => selectedYear !== 2026 || m >= 9)
+                  .map(m => {
                   const date = new Date(2000, m - 1, 1);
                   return (
                     <option key={m} value={m}>

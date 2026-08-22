@@ -42,10 +42,10 @@ export default function TeacherDashboard({ user, onLogout }) {
   const [showRoster, setShowRoster] = useState(false); // toggle roster list
 
   // Years array
-  const years = [2025, 2026, 2027, 2028, 2029, 2030];
+  const years = [2026, 2027, 2028, 2029, 2030];
   
-  // Months array
-  const months = [
+  // Months array — hide Jan–Aug for 2026 (school started Sep 2026)
+  const allMonths = [
     { value: 1, name: 'January' },
     { value: 2, name: 'February' },
     { value: 3, name: 'March' },
@@ -59,6 +59,9 @@ export default function TeacherDashboard({ user, onLogout }) {
     { value: 11, name: 'November' },
     { value: 12, name: 'December' }
   ];
+  const months = selectedYear === 2026
+    ? allMonths.filter(m => m.value >= 9)
+    : allMonths;
 
   // Helper: Format date string
   const formatDateString = (y, m, d) => {
