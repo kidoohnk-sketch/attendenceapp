@@ -685,20 +685,16 @@ app.post('/api/attendance/send-monthly-report', authenticate, requireRole(['owne
   }
 });
 
-// Start express server
-const startServer = async () => {
-  console.log('Initializing database tables...');
-  await initDb();
+// Initialize database tables on module load
+initDb().catch(err => console.error('Database initialization error:', err));
 
-  // Start background notifications checker
+// Start local server and background cron scheduler only if NOT running on Vercel
+if (!process.env.VERCEL) {
   startScheduler(query);
-
   app.listen(PORT, () => {
     console.log(`Express server listening on port ${PORT}`);
   });
-};
+}
 
-startServer().catch(err => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// Export Express app for Vercel Serverless Functions compatibility
+module.exports = app;
