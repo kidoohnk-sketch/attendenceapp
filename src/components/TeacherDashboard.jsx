@@ -34,9 +34,12 @@ export default function TeacherDashboard({ user, onLogout }) {
   const [holidayDesc, setHolidayDesc] = useState('');
   const [updatingHoliday, setUpdatingHoliday] = useState(false);
 
-  // Quick Add Student (inside day view)
+  // Quick Add / Remove Student
   const [newStudentName, setNewStudentName] = useState('');
   const [addingStudent, setAddingStudent] = useState(false);
+  const [rosterStudents, setRosterStudents] = useState([]); // for manage panel
+  const [removingStudent, setRemovingStudent] = useState(null); // id
+  const [showRoster, setShowRoster] = useState(false); // toggle roster list
 
   // Years array
   const years = [2025, 2026, 2027, 2028, 2029, 2030];
@@ -237,6 +240,16 @@ export default function TeacherDashboard({ user, onLogout }) {
     }
   };
 
+  // Load roster students for the manage panel
+  const loadRosterStudents = async () => {
+    try {
+      const list = await api.getStudents(true);
+      setRosterStudents(list);
+    } catch {
+      // silently ignore
+    }
+  };
+
   // Quick Add Student
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -251,14 +264,40 @@ export default function TeacherDashboard({ user, onLogout }) {
       setSuccess(`Student "${newStudent.name}" added successfully!`);
       setNewStudentName('');
       
+      // Refresh both lists
       const studentList = await api.getStudents(true);
       setStudents(studentList);
+      setRosterStudents(studentList);
     } catch (err) {
       setError('Failed to add student: ' + err.message);
     } finally {
       setAddingStudent(false);
     }
   };
+
+  // Remove Student (marks as inactive)
+  const handleRemoveStudent = async (student) => {
+    if (!window.confirm(`Remove "${student.name}" from the roster? They won't appear in future roll calls but their past records are preserved.`)) return;
+    setRemovingStudent(student.id);
+    setError('');
+    setSuccess('');
+    try {
+      await api.updateStudent(student.id, { name: student.name, active: 0 });
+      setSuccess(`"${student.name}" removed from the roster.`);
+      const studentList = await api.getStudents(true);
+      setRosterStudents(studentList);
+      setStudents(studentList);
+    } catch (err) {
+      setError('Failed to remove student: ' + err.message);
+    } finally {
+      setRemovingStudent(null);
+    }
+  };
+
+  // Load roster on mount
+  useEffect(() => {
+    loadRosterStudents();
+  }, []);
 
   // Get total number of days in selected Month
   const getDaysInMonth = (y, m) => {
@@ -273,6 +312,81 @@ export default function TeacherDashboard({ user, onLogout }) {
   const markedCount = Object.keys(attendance).length;
   const progressPercent = students.length > 0 ? Math.round((markedCount / students.length) * 100) : 0;
   const allMarked = markedCount === students.length;
+
+  // Shared Student Manager Panel (Add + Remove)
+  const studentManagerPanel = (
+    <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
+      <h3 style={{ fontSize: '15px', marginBottom: '12px' }}>👨‍🎓 Manage Students</h3>
+
+      {/* Add Student */}
+      <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Enter student's full name to add"
+            value={newStudentName}
+            onChange={(e) => setNewStudentName(e.target.value)}
+            style={{ padding: '8px 12px', fontSize: '14px', minHeight: '38px' }}
+          />
+        </div>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
+          disabled={addingStudent}
+        >
+          {addingStudent ? 'Adding...' : '➕ Add Student'}
+        </button>
+      </form>
+
+      {/* Toggle Roster / Remove */}
+      <button
+        type="button"
+        className="btn btn-secondary"
+        style={{ fontSize: '13px', minHeight: '34px', padding: '0 14px' }}
+        onClick={() => {
+          if (!showRoster) loadRosterStudents();
+          setShowRoster(prev => !prev);
+        }}
+      >
+        {showRoster ? '▲ Hide Roster' : `▼ View & Remove Students (${rosterStudents.length} active)`}
+      </button>
+
+      {showRoster && (
+        <div style={{ marginTop: '12px', maxHeight: '240px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+          {rosterStudents.length > 0 ? (
+            rosterStudents.map(s => (
+              <div key={s.id} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px',
+                borderBottom: '1px solid var(--border-color)',
+                fontSize: '14px'
+              }}>
+                <span style={{ fontWeight: '600' }}>{s.name}</span>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ minHeight: '30px', padding: '0 12px', fontSize: '12px' }}
+                  disabled={removingStudent === s.id}
+                  onClick={() => handleRemoveStudent(s)}
+                >
+                  {removingStudent === s.id ? 'Removing...' : '✕ Remove'}
+                </button>
+              </div>
+            ))
+          ) : (
+            <p style={{ padding: '12px', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>No active students in roster.</p>
+          )}
+        </div>
+      )}
+      <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', marginBottom: 0 }}>
+        Removed students won't appear in future roll calls. Their past attendance records are preserved.
+      </p>
+    </div>
+  );
 
   return (
     <div className="app-container">
@@ -303,33 +417,8 @@ export default function TeacherDashboard({ user, onLogout }) {
       {/* LEVEL 1: SELECT MONTH (Default Homepage) */}
       {!selectedMonth && (
         <div>
-          {/* Add Student — always visible at top */}
-          <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '15px', marginBottom: '10px' }}>➕ Add Student</h3>
-            <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter student's full name"
-                  value={newStudentName}
-                  onChange={(e) => setNewStudentName(e.target.value)}
-                  style={{ padding: '8px 12px', fontSize: '14px', minHeight: '38px' }}
-                />
-              </div>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
-                disabled={addingStudent}
-              >
-                {addingStudent ? 'Adding...' : 'Add Student'}
-              </button>
-            </form>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginBottom: 0 }}>
-              Once added, a student will appear on every day's roll call until removed.
-            </p>
-          </div>
+          {/* Manage Students Panel */}
+          {studentManagerPanel}
 
           {/* Year selector at top */}
           <div className="card" style={{ padding: '16px', marginBottom: '20px', textAlign: 'center' }}>
@@ -391,33 +480,8 @@ export default function TeacherDashboard({ user, onLogout }) {
       {/* LEVEL 2: CALENDAR DAYS GRID (For selected month) */}
       {selectedMonth && !selectedDay && (
         <div>
-          {/* Add Student — also visible on calendar view */}
-          <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', marginBottom: '10px' }}>➕ Add Student</h3>
-            <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter student's full name"
-                  value={newStudentName}
-                  onChange={(e) => setNewStudentName(e.target.value)}
-                  style={{ padding: '8px 12px', fontSize: '14px', minHeight: '38px' }}
-                />
-              </div>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
-                disabled={addingStudent}
-              >
-                {addingStudent ? 'Adding...' : 'Add Student'}
-              </button>
-            </form>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginBottom: 0 }}>
-              Once added, a student will appear on every day's roll call until removed.
-            </p>
-          </div>
+          {/* Manage Students Panel */}
+          {studentManagerPanel}
 
           <div className="card">
           <div className="view-header" style={{ marginBottom: '20px' }}>
@@ -572,33 +636,8 @@ export default function TeacherDashboard({ user, onLogout }) {
           {/* ATTENDANCE ROLL SHEET (Only if NOT Holiday) */}
           {!dayStatus.isHoliday && (
             <div>
-              {/* Quick Add Student — always accessible, students are global */}
-              <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>➕ Add Student</h3>
-                <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Enter student's full name"
-                      value={newStudentName}
-                      onChange={(e) => setNewStudentName(e.target.value)}
-                      style={{ padding: '8px 12px', fontSize: '14px', minHeight: '38px' }}
-                    />
-                  </div>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary" 
-                    style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
-                    disabled={addingStudent}
-                  >
-                    {addingStudent ? 'Adding...' : 'Add Student'}
-                  </button>
-                </form>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginBottom: 0 }}>
-                  Once added, a student will appear on every day's roll call until removed.
-                </p>
-              </div>
+              {/* Manage Students Panel */}
+              {studentManagerPanel}
 
               {/* Attendance lock status info */}
               {dayStatus.submitted && (
