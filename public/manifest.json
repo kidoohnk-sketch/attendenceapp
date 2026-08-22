@@ -1,0 +1,18 @@
+{
+  "short_name": "Chhota School",
+  "name": "My Chhota School Attendance",
+  "description": "Daily student attendance tracking for playschool teachers and owners.",
+  "icons": [
+    {
+      "src": "app-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#6366f1",
+  "theme_color": "#6366f1",
+  "display": "standalone",
+  "orientation": "portrait"
+}

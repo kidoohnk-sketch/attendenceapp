@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="roofGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fb923c" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded Icon Base -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)"/>
+  
+  <!-- School House Building -->
+  <rect x="128" y="230" width="256" height="190" rx="16" fill="#ffffff" />
+  
+  <!-- Blue Door -->
+  <rect x="224" y="310" width="64" height="110" rx="8" fill="#38bdf8" />
+  <circle cx="272" cy="365" r="5" fill="#facc15" />
+  
+  <!-- Left Window -->
+  <rect x="160" y="270" width="48" height="48" rx="8" fill="#f0f9ff" />
+  <line x1="184" y1="270" x2="184" y2="318" stroke="#cbd5e1" stroke-width="2" />
+  <line x1="160" y1="294" x2="208" y2="294" stroke="#cbd5e1" stroke-width="2" />
+  
+  <!-- Right Window -->
+  <rect x="304" y="270" width="48" height="48" rx="8" fill="#f0f9ff" />
+  <line x1="328" y1="270" x2="328" y2="318" stroke="#cbd5e1" stroke-width="2" />
+  <line x1="304" y1="294" x2="352" y2="294" stroke="#cbd5e1" stroke-width="2" />
+  
+  <!-- Colorful Roof -->
+  <polygon points="96,230 256,110 416,230" fill="url(#roofGrad)" />
+  
+  <!-- Chimney -->
+  <rect x="140" y="140" width="30" height="60" fill="#e2e8f0" />
+  <polygon points="135,140 175,140 155,130" fill="#ef4444" />
+  
+  <!-- Sun/Star details in background -->
+  <circle cx="400" cy="80" r="24" fill="#facc15" opacity="0.9" />
+</svg>
