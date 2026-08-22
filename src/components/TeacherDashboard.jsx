@@ -60,7 +60,7 @@ export default function TeacherDashboard({ user, onLogout }) {
     { value: 12, name: 'December' }
   ];
   const months = selectedYear === 2026
-    ? allMonths.filter(m => m.value >= 9)
+    ? allMonths.filter(m => m.value >= 8)
     : allMonths;
 
   // Helper: Format date string

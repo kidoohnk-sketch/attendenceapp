@@ -502,7 +502,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1)
-                  .filter(m => selectedYear !== 2026 || m >= 9)
+                  .filter(m => selectedYear !== 2026 || m >= 8)
                   .map(m => {
                   const date = new Date(2000, m - 1, 1);
                   return (
