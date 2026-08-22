@@ -23,6 +23,7 @@ export default function TeacherDashboard({ user, onLogout }) {
     timestamp: '',
     isLocked: false,
     isHoliday: false,
+    isSundayHoliday: false,
     holidayDescription: ''
   });
 
@@ -121,10 +122,11 @@ export default function TeacherDashboard({ user, onLogout }) {
           timestamp: '',
           isLocked: true,
           isHoliday: true,
-          holidayDescription: 'Sunday – Weekly Holiday'
+          isSundayHoliday: true,
+          holidayDescription: 'Sunday - Weekly Holiday'
         });
         setAttendance({});
-        return; // skip remaining state updates
+        return;
       }
 
       if (dateStatus.is_holiday) {
@@ -134,6 +136,7 @@ export default function TeacherDashboard({ user, onLogout }) {
           timestamp: '',
           isLocked: true,
           isHoliday: true,
+          isSundayHoliday: false,
           holidayDescription: dateStatus.holiday_description
         });
         setAttendance({});
@@ -144,6 +147,7 @@ export default function TeacherDashboard({ user, onLogout }) {
           timestamp: dateStatus.timestamp,
           isLocked: dateStatus.is_locked,
           isHoliday: false,
+          isSundayHoliday: false,
           holidayDescription: ''
         });
 
@@ -161,6 +165,7 @@ export default function TeacherDashboard({ user, onLogout }) {
           timestamp: '',
           isLocked: false,
           isHoliday: false,
+          isSundayHoliday: false,
           holidayDescription: ''
         });
         setAttendance({});
@@ -628,8 +633,8 @@ export default function TeacherDashboard({ user, onLogout }) {
           {/* HOLIDAY SECTION */}
           {dayStatus.isHoliday ? (
             <div className="alert alert-warning" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>
-              {dayStatus.holidayDescription === 'Sunday – Weekly Holiday'
-                ? '🌅 Sunday – This is a weekly holiday. Attendance roll is disabled.'
+              {dayStatus.isSundayHoliday
+                ? '🌅 Sunday - Weekly Holiday. Attendance roll is disabled.'
                 : <>🎉 This day is marked as a Holiday: <strong>{dayStatus.holidayDescription}</strong>. Attendance roll is disabled.</> }
             </div>
           ) : (
