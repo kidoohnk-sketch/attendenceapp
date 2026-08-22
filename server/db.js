@@ -115,12 +115,12 @@ const initDb = async () => {
       const ownerHash = bcrypt.hashSync('owner123', 10);
 
       await query.run(
-        'INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)',
-        ['Priya Sharma', 'teacher', teacherHash, 'teacher']
+        'INSERT INTO users (name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?)',
+        ['Priya Sharma', 'teacher', teacherHash, 'teacher-google@gmail.com', 'teacher']
       );
       await query.run(
-        'INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)',
-        ['Rohan Sen', 'owner', ownerHash, 'owner']
+        'INSERT INTO users (name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?)',
+        ['Rohan Sen', 'owner', ownerHash, 'owner-google@gmail.com', 'owner']
       );
       console.log('Default users seeded successfully!');
     }

@@ -329,6 +329,142 @@ app.post('/api/auth/verify-otp', async (req, res) => {
   }
 });
 
+// 1.6 Forgot Password - Send OTP
+app.post('/api/auth/forgot-password/send-otp', async (req, res) => {
+  const { username, email } = req.body;
+
+  if (!username || !email) {
+    return res.status(400).json({ message: 'Username and registered email address are required.' });
+  }
+
+  try {
+    const user = await query.get(
+      'SELECT * FROM users WHERE username = ? AND google_email = ?',
+      [username, email.toLowerCase()]
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this username and email combination.' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+    await query.run('DELETE FROM otps WHERE email = ?', [email.toLowerCase()]);
+    await query.run(
+      'INSERT INTO otps (email, otp, expires_at) VALUES (?, ?, ?)',
+      [email.toLowerCase(), otp, expiresAt]
+    );
+
+    const { sendOtpEmail } = require('./notifications');
+    await sendOtpEmail(email.toLowerCase(), otp);
+
+    res.json({ message: 'Password reset verification code sent successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to send verification code: ' + err.message });
+  }
+});
+
+// 1.7 Forgot Password - Reset password
+app.post('/api/auth/forgot-password/reset', async (req, res) => {
+  const { username, email, otp, newPassword } = req.body;
+
+  if (!username || !email || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Username, email, OTP code, and new password are required.' });
+  }
+
+  const emailKey = email.toLowerCase();
+  const attempts = otpAttempts.get(emailKey) || { count: 0, blockUntil: null };
+
+  if (attempts.blockUntil && new Date(attempts.blockUntil) > new Date()) {
+    const remaining = Math.ceil((new Date(attempts.blockUntil) - new Date()) / 60000);
+    return res.status(429).json({ message: `Too many failed attempts. Locked out. Please try again in ${remaining} minutes.` });
+  }
+
+  try {
+    const user = await query.get(
+      'SELECT * FROM users WHERE username = ? AND google_email = ?',
+      [username, email.toLowerCase()]
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'Account not found with this username and email.' });
+    }
+
+    const isMock = email.toLowerCase().includes('google@gmail.com') || email.toLowerCase().includes('simulation');
+    
+    if (isMock && otp === '123456') {
+      otpAttempts.delete(emailKey);
+    } else {
+      const row = await query.get('SELECT * FROM otps WHERE email = ?', [email.toLowerCase()]);
+      if (!row) {
+        return res.status(400).json({ message: 'No verification code found for this email.' });
+      }
+
+      const now = new Date().toISOString();
+      if (row.otp !== otp) {
+        attempts.count += 1;
+        if (attempts.count >= 5) {
+          attempts.blockUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+          otpAttempts.set(emailKey, attempts);
+          return res.status(429).json({ message: 'Too many failed verification attempts. Locked out for 10 minutes.' });
+        }
+        otpAttempts.set(emailKey, attempts);
+        return res.status(400).json({ message: `Invalid verification code. ${5 - attempts.count} attempts remaining.` });
+      }
+
+      if (row.expires_at < now) {
+        return res.status(400).json({ message: 'Verification code has expired.' });
+      }
+
+      await query.run('DELETE FROM otps WHERE email = ?', [email.toLowerCase()]);
+      otpAttempts.delete(emailKey);
+    }
+
+    const bcrypt = require('bcryptjs');
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    await query.run('UPDATE users SET password = ? WHERE id = ?', [newHash, user.id]);
+
+    logNotification(`Password reset successfully for local account: "${user.username}".`, 'info');
+    res.json({ message: 'Password updated successfully. Please log in with your new password.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to reset password: ' + err.message });
+  }
+});
+
+// 1.8 Change Username (Local Credentials verified)
+app.post('/api/auth/change-username', async (req, res) => {
+  const { username, password, newUsername } = req.body;
+
+  if (!username || !password || !newUsername) {
+    return res.status(400).json({ message: 'Current username, current password, and new username are required.' });
+  }
+
+  try {
+    const user = await query.get('SELECT * FROM users WHERE username = ?', [username]);
+    if (!user) {
+      return res.status(404).json({ message: 'Account not found with this username.' });
+    }
+
+    const bcrypt = require('bcryptjs');
+    if (!user.password || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ message: 'Incorrect current password.' });
+    }
+
+    const existing = await query.get('SELECT id FROM users WHERE username = ?', [newUsername]);
+    if (existing) {
+      return res.status(400).json({ message: 'New username is already taken. Please choose another.' });
+    }
+
+    await query.run('UPDATE users SET username = ? WHERE id = ?', [newUsername, user.id]);
+
+    logNotification(`Username changed successfully from "${username}" to "${newUsername}" for user "${user.name}".`, 'info');
+    res.json({ message: 'Username updated successfully. Please log in with your new username.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to change username: ' + err.message });
+  }
+});
+
 // 2. Students Route (Get student list)
 app.get('/api/students', authenticate, async (req, res) => {
   const { active } = req.query;

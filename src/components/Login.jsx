@@ -15,6 +15,89 @@ export default function Login({ onLoginSuccess }) {
   const [showOtpScreen, setShowOtpScreen] = useState(false);
   const [otp, setOtp] = useState('');
 
+  // Forgot Password flow states
+  const [showForgotScreen, setShowForgotScreen] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1);
+  const [forgotUsername, setForgotUsername] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+
+  // Change Username flow states
+  const [showChangeUsernameScreen, setShowChangeUsernameScreen] = useState(false);
+  const [changeCurrentUsername, setChangeCurrentUsername] = useState('');
+  const [changePassword, setChangePassword] = useState('');
+  const [changeNewUsername, setChangeNewUsername] = useState('');
+
+  const handleSendForgotPasswordOtp = async (e) => {
+    e.preventDefault();
+    if (!forgotUsername || !forgotEmail) {
+      setError('Please fill in all fields');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await api.sendForgotPasswordOtp(forgotUsername, forgotEmail);
+      setForgotStep(2);
+      setForgotSuccess('Verification code sent successfully. Please check your email.');
+    } catch (err) {
+      setError(err.message || 'Failed to send verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotOtp || !forgotNewPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await api.resetPassword(forgotUsername, forgotEmail, forgotOtp, forgotNewPassword);
+      setForgotSuccess('');
+      setError('');
+      setShowForgotScreen(false);
+      setForgotStep(1);
+      setForgotUsername('');
+      setForgotEmail('');
+      setForgotOtp('');
+      setForgotNewPassword('');
+      alert('Password updated successfully. Please sign in with your new password.');
+    } catch (err) {
+      setError(err.message || 'Password reset failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangeUsername = async (e) => {
+    e.preventDefault();
+    if (!changeCurrentUsername || !changePassword || !changeNewUsername) {
+      setError('Please fill in all fields');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await api.changeUsername(changeCurrentUsername, changePassword, changeNewUsername);
+      setError('');
+      setShowChangeUsernameScreen(false);
+      setChangeCurrentUsername('');
+      setChangePassword('');
+      setChangeNewUsername('');
+      alert('Username updated successfully. Please sign in with your new username.');
+    } catch (err) {
+      setError(err.message || 'Failed to change username.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Standard credentials login
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -140,7 +223,229 @@ export default function Login({ onLoginSuccess }) {
   return (
     <div className="login-wrapper">
       <div className="card login-card" style={{ position: 'relative', overflow: 'hidden' }}>
-        
+        {/* FORGOT PASSWORD OVERLAY */}
+          {showForgotScreen && (
+            <div style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              zIndex: 30,
+              padding: '24px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto'
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                <img src="/logo.jpeg" alt="Logo" style={{ width: '60px', height: '60px', borderRadius: '50%', marginBottom: '12px', border: '2px solid var(--primary-light)' }} />
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Reset Password</h2>
+              </div>
+
+              {error && (
+                <div className="alert alert-danger" style={{ marginBottom: '16px' }}>
+                  <span>{error}</span>
+                </div>
+              )}
+              {forgotSuccess && (
+                <div className="alert alert-success" style={{ marginBottom: '16px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '10px', borderRadius: '8px', fontSize: '13px' }}>
+                  <span>{forgotSuccess}</span>
+                </div>
+              )}
+
+              {forgotStep === 1 ? (
+                <form onSubmit={handleSendForgotPasswordOtp}>
+                  <div className="form-group" style={{ textAlign: 'left', marginBottom: '14px' }}>
+                    <label htmlFor="forgot-username">Username</label>
+                    <input
+                      id="forgot-username"
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter your username"
+                      value={forgotUsername}
+                      onChange={(e) => setForgotUsername(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="form-group" style={{ textAlign: 'left', marginBottom: '20px' }}>
+                    <label htmlFor="forgot-email">Registered Email</label>
+                    <input
+                      id="forgot-email"
+                      type="email"
+                      className="form-control"
+                      placeholder="e.g. teacher-google@gmail.com"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ width: '100%', minHeight: '42px' }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Sending...' : 'Send Verification Code'}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPassword}>
+                  <div className="form-group" style={{ textAlign: 'left', marginBottom: '14px' }}>
+                    <label htmlFor="forgot-otp" style={{ fontWeight: 'bold' }}>Verification Code (OTP)</label>
+                    <input
+                      id="forgot-otp"
+                      type="text"
+                      className="form-control"
+                      placeholder="6-digit code"
+                      maxLength={6}
+                      value={forgotOtp}
+                      onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
+                      style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '0.2em', fontWeight: 'bold' }}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="form-group" style={{ textAlign: 'left', marginBottom: '20px' }}>
+                    <label htmlFor="forgot-new-password">New Password</label>
+                    <input
+                      id="forgot-new-password"
+                      type="password"
+                      className="form-control"
+                      placeholder="Enter new password"
+                      value={forgotNewPassword}
+                      onChange={(e) => setForgotNewPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ width: '100%', minHeight: '42px' }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Updating...' : 'Update Password'}
+                  </button>
+                </form>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotScreen(false);
+                  setForgotStep(1);
+                  setForgotUsername('');
+                  setForgotEmail('');
+                  setForgotOtp('');
+                  setForgotNewPassword('');
+                  setForgotSuccess('');
+                  setError('');
+                }}
+                className="btn btn-secondary"
+                style={{ width: '100%', marginTop: '10px', border: '1px solid var(--border-color)', minHeight: '38px' }}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* CHANGE USERNAME OVERLAY */}
+          {showChangeUsernameScreen && (
+            <div style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              zIndex: 30,
+              padding: '24px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto'
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                <img src="/logo.jpeg" alt="Logo" style={{ width: '60px', height: '60px', borderRadius: '50%', marginBottom: '12px', border: '2px solid var(--primary-light)' }} />
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Change Username</h2>
+              </div>
+
+              {error && (
+                <div className="alert alert-danger" style={{ marginBottom: '16px' }}>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangeUsername}>
+                <div className="form-group" style={{ textAlign: 'left', marginBottom: '12px' }}>
+                  <label htmlFor="change-curr-username">Current Username</label>
+                  <input
+                    id="change-curr-username"
+                    type="text"
+                    className="form-control"
+                    placeholder="Enter current username"
+                    value={changeCurrentUsername}
+                    onChange={(e) => setChangeCurrentUsername(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group" style={{ textAlign: 'left', marginBottom: '12px' }}>
+                  <label htmlFor="change-pass">Password</label>
+                  <input
+                    id="change-pass"
+                    type="password"
+                    className="form-control"
+                    placeholder="Enter password"
+                    value={changePassword}
+                    onChange={(e) => setChangePassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group" style={{ textAlign: 'left', marginBottom: '20px' }}>
+                  <label htmlFor="change-new-username">New Username</label>
+                  <input
+                    id="change-new-username"
+                    type="text"
+                    className="form-control"
+                    placeholder="Enter new username"
+                    value={changeNewUsername}
+                    onChange={(e) => setChangeNewUsername(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: '100%', minHeight: '42px' }}
+                  disabled={loading}
+                >
+                  {loading ? 'Updating...' : 'Update Username'}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowChangeUsernameScreen(false);
+                  setChangeCurrentUsername('');
+                  setChangePassword('');
+                  setChangeNewUsername('');
+                  setError('');
+                }}
+                className="btn btn-secondary"
+                style={{ width: '100%', marginTop: '10px', border: '1px solid var(--border-color)', minHeight: '38px' }}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
         {/* OTP VERIFICATION VIEW */}
         {showOtpScreen && googleRegData && (
           <div style={{
@@ -316,6 +621,23 @@ export default function Login({ onLoginSuccess }) {
             {loading ? <span className="spinner" style={{ width: '20px', height: '20px' }}></span> : 'Sign In'}
           </button>
         </form>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '12px' }}>
+          <button 
+            type="button" 
+            onClick={() => { setShowForgotScreen(true); setError(''); }}
+            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0, fontWeight: '600' }}
+          >
+            Forgot Password?
+          </button>
+          <button 
+            type="button" 
+            onClick={() => { setShowChangeUsernameScreen(true); setError(''); }}
+            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0, fontWeight: '600' }}
+          >
+            Change Username?
+          </button>
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', color: 'var(--text-muted)' }}>
           <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>

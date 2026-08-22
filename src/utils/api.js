@@ -219,5 +219,32 @@ export const api = {
       localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
+  },
+
+  sendForgotPasswordOtp: async (username, email) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password/send-otp`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ username, email }),
+    });
+    return handleResponse(res);
+  },
+
+  resetPassword: async (username, email, otp, newPassword) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password/reset`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ username, email, otp, newPassword }),
+    });
+    return handleResponse(res);
+  },
+
+  changeUsername: async (username, password, newUsername) => {
+    const res = await fetch(`${API_BASE}/auth/change-username`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ username, password, newUsername }),
+    });
+    return handleResponse(res);
   }
 };
