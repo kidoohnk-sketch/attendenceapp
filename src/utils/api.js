@@ -79,6 +79,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  deleteStudent: async (id) => {
+    const res = await fetch(`${API_BASE}/students/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   // Attendance
   getAttendance: async (date) => {
     const res = await fetch(`${API_BASE}/attendance?date=${date}`, {

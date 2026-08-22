@@ -45,6 +45,7 @@ export default function OwnerDashboard({ user, onLogout }) {
   const [showInactive, setShowInactive] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
   const [updatingStudent, setUpdatingStudent] = useState(null);
+  const [deletingStudentPermanently, setDeletingStudentPermanently] = useState(null);
 
   // 5. Holiday Management
   const [holidays, setHolidays] = useState([]);
@@ -223,6 +224,26 @@ export default function OwnerDashboard({ user, onLogout }) {
       setError('Failed to toggle status: ' + err.message);
     } finally {
       setUpdatingStudent(null);
+    }
+  };
+
+  // Permanently delete a student and all their records
+  const handleDeleteStudentPermanently = async (student) => {
+    const studentId = student.student_id || student.id;
+    const studentName = student.name;
+    if (!window.confirm(`⚠️ PERMANENT DELETE\n\nThis will permanently delete "${studentName}" and ALL their attendance history.\n\nThis cannot be undone! Are you sure?`)) return;
+    setDeletingStudentPermanently(studentId);
+    setError('');
+    setSuccess('');
+    try {
+      await api.deleteStudent(studentId);
+      setSuccess(`Student "${studentName}" permanently deleted.`);
+      await loadStudents();
+      if (activeTab === 'monthly') await loadMonthlyReport();
+    } catch (err) {
+      setError('Failed to delete student: ' + err.message);
+    } finally {
+      setDeletingStudentPermanently(null);
     }
   };
 
@@ -576,14 +597,12 @@ export default function OwnerDashboard({ user, onLogout }) {
                         <td>
                           <button
                             type="button"
-                            onClick={() => handleToggleStudentActive({ id: student.student_id, name: student.name, active: student.active })}
-                            className={`btn ${student.active ? 'btn-danger' : 'btn-success'}`}
+                            onClick={() => handleDeleteStudentPermanently(student)}
+                            className="btn btn-danger"
                             style={{ minHeight: '30px', padding: '0 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
-                            disabled={updatingStudent === student.student_id}
+                            disabled={deletingStudentPermanently === student.student_id}
                           >
-                            {updatingStudent === student.student_id
-                              ? '...'
-                              : student.active ? '✕ Remove' : '✓ Rejoin'}
+                            {deletingStudentPermanently === student.student_id ? 'Deleting...' : '🗑️ Delete'}
                           </button>
                         </td>
                       </tr>

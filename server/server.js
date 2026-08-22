@@ -538,6 +538,29 @@ app.put('/api/students/:id', authenticate, async (req, res) => {
   }
 });
 
+// 4b. Permanently Delete Student (Owner only)
+app.delete('/api/students/:id', authenticate, requireRole(['owner']), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const student = await query.get('SELECT * FROM students WHERE id = ?', [id]);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found.' });
+    }
+
+    // Delete attendance records first to avoid orphaned data
+    await query.run('DELETE FROM attendance WHERE student_id = ?', [id]);
+    // Now delete the student
+    await query.run('DELETE FROM students WHERE id = ?', [id]);
+
+    logNotification(`Student "${student.name}" permanently deleted by ${req.user.name}.`, 'info');
+    res.json({ message: `Student "${student.name}" permanently deleted.` });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting student: ' + err.message });
+  }
+});
+
+
 // 5. Check Attendance Status for a specific date (Defaults to today)
 app.get('/api/attendance/status', authenticate, async (req, res) => {
   const dateStr = req.query.date || getIndiaDateString();
