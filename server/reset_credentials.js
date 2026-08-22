@@ -20,8 +20,8 @@ async function resetCredentials() {
     console.log('Connecting to database...');
 
     // Hash new passwords
-    const teacherHash = bcrypt.hashSync('Teacher@123', 10);
-    const ownerHash   = bcrypt.hashSync('rama@234', 10);
+    const teacherHash = bcrypt.hashSync('Teacher@3124', 10);
+    const ownerHash   = bcrypt.hashSync('rama@7761', 10);
 
     // NOTE: Server lowercases username on login, so store usernames in lowercase!
     // Teacher → stored as "teacher", login with username: Teacher (case-insensitive)
@@ -70,8 +70,8 @@ async function resetCredentials() {
     })));
 
     console.log('\n🔑 Working credentials (username is case-insensitive at login):');
-    console.log('   Teacher → username: Teacher  |  password: Teacher@123');
-    console.log('   Owner   → username: RD       |  password: rama@234');
+    console.log('   Teacher → username: Teacher  |  password: Teacher@3124');
+    console.log('   Owner   → username: RD       |  password: rama@7761');
 
   } catch (err) {
     console.error('❌ Error resetting credentials:', err);

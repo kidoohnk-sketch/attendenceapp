@@ -622,22 +622,7 @@ export default function Login({ onLoginSuccess }) {
           </button>
         </form>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '12px' }}>
-          <button 
-            type="button" 
-            onClick={() => { setShowForgotScreen(true); setError(''); }}
-            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0, fontWeight: '600' }}
-          >
-            Forgot Password?
-          </button>
-          <button 
-            type="button" 
-            onClick={() => { setShowChangeUsernameScreen(true); setError(''); }}
-            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0, fontWeight: '600' }}
-          >
-            Change Username?
-          </button>
-        </div>
+
 
         <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', color: 'var(--text-muted)' }}>
           <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
