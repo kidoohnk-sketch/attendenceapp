@@ -1,6 +1,8 @@
 /**
- * Credential Reset Script
- * Updates usernames and passwords for teacher and owner accounts.
+ * Credential Reset Script (Fixed - lowercase usernames to match server login logic)
+ * The server does: WHERE username = username.toLowerCase()
+ * So usernames must be stored in lowercase.
+ *
  * Run with: node reset_credentials.js
  */
 
@@ -21,34 +23,36 @@ async function resetCredentials() {
     const teacherHash = bcrypt.hashSync('Teacher@123', 10);
     const ownerHash   = bcrypt.hashSync('rama@234', 10);
 
-    // --- Update / Insert Teacher ---
-    // Try to update existing teacher by role
+    // NOTE: Server lowercases username on login, so store usernames in lowercase!
+    // Teacher → stored as "teacher", login with username: Teacher (case-insensitive)
+    // Owner   → stored as "rd",      login with username: RD      (case-insensitive)
+
+    // --- Update Teacher ---
     const teacherRes = await client.execute({
       sql: `UPDATE users SET username = ?, password = ?, name = ? WHERE role = 'teacher'`,
-      args: ['Teacher', teacherHash, 'Teacher'],
+      args: ['teacher', teacherHash, 'Teacher'],
     });
 
     if (teacherRes.rowsAffected === 0) {
-      // No teacher row exists — insert one
       await client.execute({
         sql: `INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, 'teacher')`,
-        args: ['Teacher', 'Teacher', teacherHash],
+        args: ['Teacher', 'teacher', teacherHash],
       });
       console.log('✅ Teacher account created.');
     } else {
       console.log(`✅ Teacher account updated (${teacherRes.rowsAffected} row(s) updated).`);
     }
 
-    // --- Update / Insert Owner ---
+    // --- Update Owner ---
     const ownerRes = await client.execute({
       sql: `UPDATE users SET username = ?, password = ?, name = ? WHERE role = 'owner'`,
-      args: ['RD', ownerHash, 'RD'],
+      args: ['rd', ownerHash, 'RD'],
     });
 
     if (ownerRes.rowsAffected === 0) {
       await client.execute({
         sql: `INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, 'owner')`,
-        args: ['RD', 'RD', ownerHash],
+        args: ['RD', 'rd', ownerHash],
       });
       console.log('✅ Owner account created.');
     } else {
@@ -65,7 +69,7 @@ async function resetCredentials() {
       role:     r.role,
     })));
 
-    console.log('\n🔑 New credentials:');
+    console.log('\n🔑 Working credentials (username is case-insensitive at login):');
     console.log('   Teacher → username: Teacher  |  password: Teacher@123');
     console.log('   Owner   → username: RD       |  password: rama@234');
 
