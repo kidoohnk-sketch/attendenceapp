@@ -1049,22 +1049,15 @@ export default function OwnerDashboard({ user, onLogout }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                   {staffMembers.map(member => {
                     const status = staffAttendanceMap[member.id] || 'Present';
+                    let cardClass = "student-card";
+                    if (status === 'Present') cardClass += " marked-present";
+                    if (status === 'Absent') cardClass += " marked-absent";
+
                     return (
-                      <div
-                        key={member.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '12px 16px',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '10px',
-                          backgroundColor: 'var(--bg-primary)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div key={member.id} className={cardClass}>
+                        <div className="student-info">
                           {editingStaffId === member.id ? (
-                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
                               <input
                                 type="text"
                                 className="form-control"
@@ -1092,7 +1085,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                             </div>
                           ) : (
                             <>
-                              <span style={{ fontWeight: '700', fontSize: '16px' }}>{member.name}</span>
+                              <span className="student-name-label">{member.name}</span>
                               <button
                                 type="button"
                                 title="Edit staff member name"
@@ -1104,20 +1097,18 @@ export default function OwnerDashboard({ user, onLogout }) {
                             </>
                           )}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div className="attendance-toggle">
                           <button
                             type="button"
                             onClick={() => setStaffAttendanceMap(prev => ({ ...prev, [member.id]: 'Present' }))}
-                            className={`btn ${status === 'Present' ? 'btn-success' : 'btn-secondary'}`}
-                            style={{ minHeight: '36px', padding: '0 16px', fontSize: '14px' }}
+                            className={`attendance-toggle-btn btn-present ${status === 'Present' ? 'active' : ''}`}
                           >
                             Present
                           </button>
                           <button
                             type="button"
                             onClick={() => setStaffAttendanceMap(prev => ({ ...prev, [member.id]: 'Absent' }))}
-                            className={`btn ${status === 'Absent' ? 'btn-danger' : 'btn-secondary'}`}
-                            style={{ minHeight: '36px', padding: '0 16px', fontSize: '14px' }}
+                            className={`attendance-toggle-btn btn-absent ${status === 'Absent' ? 'active' : ''}`}
                           >
                             Absent
                           </button>
