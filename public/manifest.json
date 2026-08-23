@@ -4,23 +4,6 @@
   "description": "Daily student and staff attendance portal for My Chhota School Nakkalagutta Hanamkonda.",
   "icons": [
     {
-      "src": "/app-icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192 512x512",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/logo.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
-    },
-    {
       "src": "/icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
@@ -31,10 +14,16 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
-  "background_color": "#6366f1",
+  "background_color": "#ffffff",
   "theme_color": "#6366f1",
   "display": "standalone",
   "orientation": "portrait"

@@ -9,8 +9,8 @@
     <meta name="description" content="A simple, premium Playschool Attendance portal for My Chhota School Nakkalagutta Hanamkonda." />
 
     <!-- Favicons / PWA -->
-    <link rel="icon" type="image/svg+xml" href="/app-icon.svg" />
-    <link rel="apple-touch-icon" href="/app-icon.svg" />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-512.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#4338ca" media="(prefers-color-scheme: dark)" />
@@ -118,7 +118,7 @@
     <script>
       // Automatic cache buster for PWA updates
       (function() {
-        const CURRENT_VERSION = 'v17';
+        const CURRENT_VERSION = 'v18';
         if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
           localStorage.setItem('app_version', CURRENT_VERSION);
           if ('serviceWorker' in navigator) {
@@ -139,7 +139,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
-            .register('/sw.js?v=17')
+            .register('/sw.js?v=18')
             .then((reg) => console.log('Service Worker registered:', reg.scope))
             .catch((err) => console.log('Service Worker registration failed:', err));
         });
