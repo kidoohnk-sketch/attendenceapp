@@ -20,7 +20,8 @@ const getIndiaDateString = (d = new Date()) => {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '4mb' })); // Increased to allow Base64 photo uploads
+
 
 // Auth Middleware to protect routes and inject user
 const authenticate = (req, res, next) => {
@@ -49,6 +50,20 @@ const requireRole = (roles) => {
     next();
   };
 };
+
+// Ensure DB initialization completes on serverless cold starts
+let dbInitialized = false;
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    try {
+      await initDb();
+      dbInitialized = true;
+    } catch (err) {
+      console.error('Database initialization error during request:', err);
+    }
+  }
+  next();
+});
 
 // ---------------- API ENDPOINTS ----------------
 
@@ -168,7 +183,7 @@ app.post('/api/auth/google/register', async (req, res) => {
     return res.status(400).json({ message: 'Email, Name, and Role are required.' });
   }
 
-  if (!['teacher', 'owner'].includes(role)) {
+  if (!['teacher', 'owner', 'staff'].includes(role)) {
     return res.status(400).json({ message: 'Invalid user role selected.' });
   }
 
@@ -465,18 +480,40 @@ app.post('/api/auth/change-username', async (req, res) => {
   }
 });
 
+// 1.9 Get list of teachers (Owner only)
+app.get('/api/teachers', authenticate, requireRole(['owner']), async (req, res) => {
+  try {
+    const teachers = await query.all("SELECT id, name, username, google_email FROM users WHERE role = 'teacher' ORDER BY name ASC");
+    res.json(teachers);
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving teachers: ' + err.message });
+  }
+});
+
 // 2. Students Route (Get student list)
 app.get('/api/students', authenticate, async (req, res) => {
   const { active } = req.query;
   
   try {
-    let sql = 'SELECT * FROM students ORDER BY name ASC';
+    let sql = 'SELECT * FROM students';
     const params = [];
     
-    if (active !== undefined) {
-      sql = 'SELECT * FROM students WHERE active = ? ORDER BY name ASC';
-      params.push(parseInt(active));
+    if (req.user.role === 'teacher') {
+      sql += ' WHERE teacher_id = ?';
+      params.push(req.user.id);
+      
+      if (active !== undefined) {
+        sql += ' AND active = ?';
+        params.push(parseInt(active));
+      }
+    } else {
+      if (active !== undefined) {
+        sql += ' WHERE active = ?';
+        params.push(parseInt(active));
+      }
     }
+    
+    sql += ' ORDER BY name ASC';
     
     const students = await query.all(sql, params);
     res.json(students);
@@ -494,9 +531,13 @@ app.post('/api/students', authenticate, async (req, res) => {
 
   try {
     const today = getIndiaDateString();
+    let teacherId = null;
+    if (req.user.role === 'teacher') {
+      teacherId = req.user.id;
+    }
     const result = await query.run(
-      'INSERT INTO students (name, date_added, active) VALUES (?, ?, 1)',
-      [name.trim(), today]
+      'INSERT INTO students (name, date_added, active, teacher_id) VALUES (?, ?, 1, ?)',
+      [name.trim(), today, teacherId]
     );
     
     logNotification(`Student "${name.trim()}" added to roster by ${req.user.name}.`, 'info');
@@ -535,6 +576,245 @@ app.put('/api/students/:id', authenticate, async (req, res) => {
     res.json({ id: parseInt(id), name: updatedName, active: updatedActive });
   } catch (err) {
     res.status(500).json({ message: 'Error updating student: ' + err.message });
+  }
+});
+
+// 4.5 Update Student Teacher Assignment (Owner only)
+app.put('/api/students/:id/teacher', authenticate, requireRole(['owner']), async (req, res) => {
+  const { id } = req.params;
+  const { teacher_id } = req.body;
+
+  try {
+    const student = await query.get('SELECT * FROM students WHERE id = ?', [id]);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found.' });
+    }
+
+    await query.run('UPDATE students SET teacher_id = ? WHERE id = ?', [teacher_id || null, id]);
+    
+    logNotification(`Student "${student.name}" assigned to teacher by ${req.user.name}.`, 'info');
+    res.json({ message: 'Student assigned successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error assigning student: ' + err.message });
+  }
+});
+
+// --- STAFF MANAGEMENT ROUTES ---
+
+// 1. Get Staff Members List
+app.get('/api/staff-members', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { active } = req.query;
+  try {
+    let sql = 'SELECT * FROM staff_members';
+    const params = [];
+    if (active !== undefined) {
+      sql += ' WHERE active = ?';
+      params.push(parseInt(active));
+    }
+    sql += ' ORDER BY name ASC';
+    const staff = await query.all(sql, params);
+    res.json(staff);
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving staff members: ' + err.message });
+  }
+});
+
+// 2. Add Staff Member
+app.post('/api/staff-members', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: 'Staff member name is required.' });
+  }
+
+  try {
+    const today = getIndiaDateString();
+    const result = await query.run(
+      'INSERT INTO staff_members (name, date_added, active) VALUES (?, ?, 1)',
+      [name.trim(), today]
+    );
+    
+    logNotification(`Staff member "${name.trim()}" added to roster by ${req.user.name}.`, 'info');
+    res.status(201).json({ id: result.id, name: name.trim(), date_added: today, active: 1 });
+  } catch (err) {
+    res.status(500).json({ message: 'Error adding staff member: ' + err.message });
+  }
+});
+
+// 3. Update Staff Member Status (Toggle Active/Inactive)
+app.put('/api/staff-members/:id', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { id } = req.params;
+  const { name, active } = req.body;
+
+  if (active === undefined) {
+    return res.status(400).json({ message: 'Active status is required.' });
+  }
+
+  try {
+    const member = await query.get('SELECT * FROM staff_members WHERE id = ?', [id]);
+    if (!member) {
+      return res.status(404).json({ message: 'Staff member not found.' });
+    }
+
+    const updatedName = name !== undefined ? name.trim() : member.name;
+    const updatedActive = parseInt(active);
+
+    await query.run(
+      'UPDATE staff_members SET name = ?, active = ? WHERE id = ?',
+      [updatedName, updatedActive, id]
+    );
+
+    const statusText = updatedActive === 1 ? 'ACTIVE' : 'INACTIVE';
+    logNotification(`Staff member "${updatedName}" status updated to ${statusText} by ${req.user.name}.`, 'info');
+
+    res.json({ id: parseInt(id), name: updatedName, active: updatedActive });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating staff member: ' + err.message });
+  }
+});
+
+// 3.5 Delete Staff Member Permanently
+app.delete('/api/staff-members/:id', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const member = await query.get('SELECT * FROM staff_members WHERE id = ?', [id]);
+    if (!member) {
+      return res.status(404).json({ message: 'Staff member not found.' });
+    }
+
+    await query.run('DELETE FROM staff_members WHERE id = ?', [id]);
+    logNotification(`Staff member "${member.name}" permanently deleted by ${req.user.name}.`, 'warning');
+
+    res.json({ message: 'Staff member deleted permanently.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting staff member: ' + err.message });
+  }
+});
+
+// 4. Get Staff Attendance by Date
+app.get('/api/staff-attendance', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { date } = req.query;
+  if (!date) {
+    return res.status(400).json({ message: 'Date parameter is required.' });
+  }
+
+  try {
+    const records = await query.all(
+      `SELECT sa.id, sa.staff_member_id, sm.name as staff_name, sa.date, sa.status, sa.marked_by, sa.timestamp
+       FROM staff_attendance sa
+       JOIN staff_members sm ON sa.staff_member_id = sm.id
+       WHERE sa.date = ?
+       ORDER BY sm.name ASC`,
+      [date]
+    );
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving staff attendance: ' + err.message });
+  }
+});
+
+// 5. Submit Staff Attendance
+app.post('/api/staff-attendance', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { date, attendance } = req.body;
+  if (!date || !Array.isArray(attendance)) {
+    return res.status(400).json({ message: 'Date and attendance array are required.' });
+  }
+
+  try {
+    const timestamp = getIndiaISOString();
+    const markedBy = req.user.name;
+    let presentCount = 0;
+    let absentCount = 0;
+
+    for (const item of attendance) {
+      const { staff_member_id, status } = item;
+      if (!staff_member_id || !['Present', 'Absent'].includes(status)) continue;
+
+      if (status === 'Present') presentCount++;
+      if (status === 'Absent') absentCount++;
+
+      const existing = await query.get(
+        'SELECT id FROM staff_attendance WHERE staff_member_id = ? AND date = ?',
+        [staff_member_id, date]
+      );
+
+      if (existing) {
+        await query.run(
+          'UPDATE staff_attendance SET status = ?, marked_by = ?, timestamp = ? WHERE id = ?',
+          [status, markedBy, timestamp, existing.id]
+        );
+      } else {
+        await query.run(
+          'INSERT INTO staff_attendance (staff_member_id, date, status, marked_by, timestamp) VALUES (?, ?, ?, ?, ?)',
+          [staff_member_id, date, status, markedBy, timestamp]
+        );
+      }
+    }
+
+    logNotification(`SUCCESS: Staff attendance marked for ${date} by ${markedBy}. Present: ${presentCount}, Absent: ${absentCount}.`, 'success');
+    res.json({ message: 'Staff attendance recorded successfully.', timestamp, marked_by: markedBy });
+  } catch (err) {
+    res.status(500).json({ message: 'Error submitting staff attendance: ' + err.message });
+  }
+});
+
+// 6. Get Staff Monthly Attendance Log
+app.get('/api/staff-attendance/monthly-log', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { year, month } = req.query;
+  if (!year || !month) {
+    return res.status(400).json({ message: 'Year and month are required.' });
+  }
+
+  const formattedMonth = String(month).padStart(2, '0');
+  const datePattern = `${year}-${formattedMonth}-%`;
+
+  try {
+    const logs = await query.all(
+      `SELECT date, marked_by, timestamp,
+              SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present_count,
+              SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as absent_count
+       FROM staff_attendance
+       WHERE date LIKE ?
+       GROUP BY date
+       ORDER BY date DESC`,
+      [datePattern]
+    );
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving monthly staff log: ' + err.message });
+  }
+});
+
+// 4c. Upload / Update Student Photo
+app.put('/api/students/:id/photo', authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { photo_url } = req.body;
+
+  if (!photo_url) {
+    return res.status(400).json({ message: 'photo_url (Base64 data URL) is required.' });
+  }
+
+  // Basic validation: must be a data URL image
+  if (!photo_url.startsWith('data:image/')) {
+    return res.status(400).json({ message: 'Invalid image format. Must be a Base64 data URL.' });
+  }
+
+  // Limit size to ~2MB of Base64 (~1.5MB actual image)
+  if (photo_url.length > 2.8 * 1024 * 1024) {
+    return res.status(413).json({ message: 'Photo is too large. Please use an image under 1.5 MB.' });
+  }
+
+  try {
+    const student = await query.get('SELECT * FROM students WHERE id = ?', [id]);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found.' });
+    }
+
+    await query.run('UPDATE students SET photo_url = ? WHERE id = ?', [photo_url, id]);
+    logNotification(`Photo updated for student "${student.name}" by ${req.user.name}.`, 'info');
+    res.json({ message: 'Photo updated successfully.', id: parseInt(id) });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving photo: ' + err.message });
   }
 });
 
@@ -710,7 +990,12 @@ app.get('/api/attendance/summary', authenticate, requireRole(['owner']), async (
   const datePattern = `${year}-${formattedMonth}-%`;
 
   try {
-    const students = await query.all('SELECT * FROM students ORDER BY name ASC');
+    const students = await query.all(`
+      SELECT s.*, u.name as teacher_name 
+      FROM students s 
+      LEFT JOIN users u ON s.teacher_id = u.id 
+      ORDER BY s.name ASC
+    `);
 
     const summary = [];
     for (const student of students) {
@@ -727,6 +1012,7 @@ app.get('/api/attendance/summary', authenticate, requireRole(['owner']), async (
       summary.push({
         student_id: student.id,
         name: student.name,
+        teacher_name: student.teacher_name || 'Unassigned',
         active: student.active === 1,
         present_days: stats.present_days || 0,
         absent_days: stats.absent_days || 0,
@@ -758,8 +1044,8 @@ app.get('/api/attendance/monthly-log', authenticate, async (req, res) => {
               SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as absent_count
        FROM attendance
        WHERE date LIKE ?
-       GROUP BY date
-       ORDER BY date DESC`,
+       GROUP BY date, marked_by
+       ORDER BY date DESC, timestamp DESC`,
       [datePattern]
     );
     res.json(logs);

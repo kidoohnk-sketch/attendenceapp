@@ -4,9 +4,26 @@
   "description": "Daily student attendance tracking for playschool teachers and owners.",
   "icons": [
     {
-      "src": "app-icon.svg",
+      "src": "/favicon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import TeacherDashboard from './components/TeacherDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
+import StaffDashboard from './components/StaffDashboard';
 import { api } from './utils/api';
 
 function App() {
@@ -47,6 +48,10 @@ function App() {
 
   if (user.role === 'owner') {
     return <OwnerDashboard user={user} onLogout={handleLogout} />;
+  }
+
+  if (user.role === 'staff') {
+    return <StaffDashboard user={user} onLogout={handleLogout} />;
   }
 
   // Fallback: If user role is invalid, force logout

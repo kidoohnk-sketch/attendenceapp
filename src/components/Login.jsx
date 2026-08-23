@@ -237,7 +237,7 @@ export default function Login({ onLoginSuccess }) {
               overflowY: 'auto'
             }}>
               <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                <img src="/logo.jpeg" alt="Logo" style={{ width: '60px', height: '60px', borderRadius: '50%', marginBottom: '12px', border: '2px solid var(--primary-light)' }} />
+                <img src="/logo.svg" alt="My Chhota School Logo" style={{ height: '48px', maxWidth: '200px', objectFit: 'contain', marginBottom: '12px' }} />
                 <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Reset Password</h2>
               </div>
 
@@ -367,7 +367,7 @@ export default function Login({ onLoginSuccess }) {
               overflowY: 'auto'
             }}>
               <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                <img src="/logo.jpeg" alt="Logo" style={{ width: '60px', height: '60px', borderRadius: '50%', marginBottom: '12px', border: '2px solid var(--primary-light)' }} />
+                <img src="/logo.svg" alt="My Chhota School Logo" style={{ height: '48px', maxWidth: '200px', objectFit: 'contain', marginBottom: '12px' }} />
                 <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Change Username</h2>
               </div>
 
@@ -460,7 +460,7 @@ export default function Login({ onLoginSuccess }) {
             justifyContent: 'center',
             alignItems: 'center'
           }}>
-            <img src="/logo.jpeg" alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '50%', marginBottom: '16px', border: '2px solid var(--primary-light)' }} />
+            <img src="/logo.svg" alt="My Chhota School Logo" style={{ height: '60px', maxWidth: '240px', objectFit: 'contain', marginBottom: '16px' }} />
             <h2 style={{ fontSize: '20px', marginBottom: '8px' }}>Security Verification</h2>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '20px' }}>
               A 6-digit OTP code has been dispatched to <strong>{googleRegData.email}</strong> from <strong>kidoohnk@gmail.com</strong>.
@@ -529,7 +529,7 @@ export default function Login({ onLoginSuccess }) {
             justifyContent: 'center',
             alignItems: 'center'
           }}>
-            <img src="/logo.jpeg" alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '50%', marginBottom: '16px', border: '2px solid var(--primary-light)' }} />
+            <img src="/logo.svg" alt="My Chhota School Logo" style={{ height: '60px', maxWidth: '240px', objectFit: 'contain', marginBottom: '16px' }} />
             <h2 style={{ fontSize: '20px', marginBottom: '8px' }}>Complete Registration</h2>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '24px' }}>
               Welcome <strong>{googleRegData.name}</strong> ({googleRegData.email})! Please select your school role to verify your account:
@@ -560,14 +560,12 @@ export default function Login({ onLoginSuccess }) {
 
         <div style={{ marginBottom: '20px' }}>
           <img 
-            src="/logo.jpeg" 
+            src="/logo.svg" 
             alt="My Chhota School Logo" 
             style={{ 
-              width: '100px', 
-              height: '100px', 
-              borderRadius: '50%', 
-              boxShadow: 'var(--shadow-md)',
-              border: '3px solid var(--primary-light)' 
+              height: '75px', 
+              maxWidth: '280px', 
+              objectFit: 'contain'
             }} 
           />
         </div>

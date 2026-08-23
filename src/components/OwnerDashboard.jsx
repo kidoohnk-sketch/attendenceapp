@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
 
 export default function OwnerDashboard({ user, onLogout }) {
@@ -42,8 +42,10 @@ export default function OwnerDashboard({ user, onLogout }) {
 
   // 4. Student Management
   const [allStudents, setAllStudents] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [showInactive, setShowInactive] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentTeacherId, setNewStudentTeacherId] = useState('');
   const [updatingStudent, setUpdatingStudent] = useState(null);
   const [deletingStudentPermanently, setDeletingStudentPermanently] = useState(null);
 
@@ -56,6 +58,53 @@ export default function OwnerDashboard({ user, onLogout }) {
 
   // 6. Notification Logs
   const [notificationLogs, setNotificationLogs] = useState([]);
+
+  // 7. Photo upload state
+  const [uploadingPhoto, setUploadingPhoto] = useState(null); // student id
+
+  // Compress image to base64 (max 800px wide, 80% JPEG quality)
+  const compressImage = useCallback((file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 800;
+          let { width, height } = img;
+          if (width > MAX) {
+            height = Math.round((height * MAX) / width);
+            width = MAX;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  // Upload/update student photo
+  const handleOwnerPhotoUpload = useCallback(async (student, file) => {
+    if (!file) return;
+    setUploadingPhoto(student.id);
+    setError('');
+    try {
+      const compressed = await compressImage(file);
+      await api.uploadStudentPhoto(student.id, compressed);
+      setSuccess(`Photo updated for "${student.name}"!`);
+      await loadStudents();
+    } catch (err) {
+      setError('Failed to upload photo: ' + err.message);
+    } finally {
+      setUploadingPhoto(null);
+    }
+  }, [compressImage]);
 
   // Load Today's overview data
   const loadTodayOverview = async () => {
@@ -143,6 +192,16 @@ export default function OwnerDashboard({ user, onLogout }) {
     }
   };
 
+  // Load Teachers list
+  const loadTeachers = async () => {
+    try {
+      const list = await api.getTeachers();
+      setTeachers(list);
+    } catch (err) {
+      console.error('Failed to load teachers:', err);
+    }
+  };
+
   // Load Holidays list
   const loadHolidays = async () => {
     setLoading(true);
@@ -181,6 +240,7 @@ export default function OwnerDashboard({ user, onLogout }) {
       loadMonthlyReport();
     } else if (activeTab === 'students') {
       loadStudents();
+      loadTeachers();
     } else if (activeTab === 'holidays') {
       loadHolidays();
     } else if (activeTab === 'logs') {
@@ -244,6 +304,18 @@ export default function OwnerDashboard({ user, onLogout }) {
       setError('Failed to delete student: ' + err.message);
     } finally {
       setDeletingStudentPermanently(null);
+    }
+  };
+
+  const handleAssignTeacher = async (student, teacherId) => {
+    setError('');
+    setSuccess('');
+    try {
+      await api.assignStudentTeacher(student.id, teacherId);
+      setSuccess(`Student "${student.name}" assigned to teacher successfully.`);
+      await loadStudents();
+    } catch (err) {
+      setError('Failed to assign teacher: ' + err.message);
     }
   };
 
@@ -316,7 +388,7 @@ export default function OwnerDashboard({ user, onLogout }) {
       {/* Header */}
       <header className="app-header">
         <div className="header-brand">
-          <img src="/logo.jpeg" alt="Logo" className="header-logo" style={{ borderRadius: '50%', border: '1px solid var(--border-color)' }} />
+          <img src="/logo.svg" alt="My Chhota School Logo" className="header-logo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
           <div className="header-title">
             <h1>My Chhota School</h1>
             <p>Owner Dashboard</p>
@@ -563,6 +635,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                 <thead>
                   <tr>
                     <th>Student Name</th>
+                    <th>Teacher / Section</th>
                     <th>Status</th>
                     <th>Present Days</th>
                     <th>Absent Days</th>
@@ -583,6 +656,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                         <td style={{ fontWeight: '600' }}>
                           {student.name} {!student.active && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>(Inactive)</span>}
                         </td>
+                        <td>{student.teacher_name}</td>
                         <td>
                           <span className={`badge ${student.active ? 'badge-success' : 'badge-danger'}`}>
                             {student.active ? 'Active' : 'Left'}
@@ -661,31 +735,65 @@ export default function OwnerDashboard({ user, onLogout }) {
 
             <div className="student-manage-list">
               {filteredStudentsForManage.length > 0 ? (
-                filteredStudentsForManage.map((student) => (
-                  <div key={student.id} className={`student-manage-item ${student.active === 0 ? 'inactive' : ''}`}>
-                    <div>
-                      <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        Added on: {new Date(student.date_added).toLocaleDateString()}
+                filteredStudentsForManage.map((student) => {
+                  const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                  return (
+                    <div key={student.id} className={`student-manage-item ${student.active === 0 ? 'inactive' : ''}`}>
+                      {/* Photo avatar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                        {student.photo_url
+                          ? <img src={student.photo_url} alt={student.name} className="roster-avatar-img" style={{ width: '40px', height: '40px' }} />
+                          : <div className="roster-avatar-initials" style={{ width: '40px', height: '40px', fontSize: '14px' }}>{initials}</div>
+                        }
+                        <div style={{ minWidth: 0 }}>
+                          <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Added on: {new Date(student.date_added).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                        <select
+                          className="form-control"
+                          style={{ minHeight: '38px', padding: '0 8px', fontSize: '13px', width: '130px' }}
+                          value={student.teacher_id || ''}
+                          onChange={(e) => handleAssignTeacher(student, e.target.value)}
+                        >
+                          <option value="">Unassigned</option>
+                          {teachers.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                        {/* Photo upload button */}
+                        <label
+                          className={`photo-upload-btn${uploadingPhoto === student.id ? ' uploading' : ''}`}
+                          title="Upload / change photo"
+                        >
+                          {uploadingPhoto === student.id ? '⏳' : '📷 Photo'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="photo-file-input"
+                            onChange={(e) => handleOwnerPhotoUpload(student, e.target.files[0])}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStudentActive(student)}
+                          className={`btn ${student.active === 1 ? 'btn-danger' : 'btn-success'}`}
+                          style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
+                          disabled={updatingStudent === student.id}
+                        >
+                          {updatingStudent === student.id
+                            ? 'Updating...'
+                            : student.active === 1
+                            ? 'Mark Inactive (Left)'
+                            : 'Mark Active (Rejoin)'}
+                        </button>
                       </div>
                     </div>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStudentActive(student)}
-                        className={`btn ${student.active === 1 ? 'btn-danger' : 'btn-success'}`}
-                        style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}
-                        disabled={updatingStudent === student.id}
-                      >
-                        {updatingStudent === student.id
-                          ? 'Updating...'
-                          : student.active === 1
-                          ? 'Mark Inactive (Left)'
-                          : 'Mark Active (Rejoin)'}
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="alert alert-warning" style={{ margin: 0 }}>
                   <span>No students found in the roster.</span>

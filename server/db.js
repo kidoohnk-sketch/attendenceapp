@@ -52,7 +52,7 @@ const query = {
 // Initialize schema and seed data
 const initDb = async () => {
   try {
-    // 1. Create Users Table
+    // 1. Create Users Table (allowing teacher, owner, staff)
     await query.run(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,7 +60,7 @@ const initDb = async () => {
         username TEXT UNIQUE,
         password TEXT,
         google_email TEXT UNIQUE,
-        role TEXT NOT NULL CHECK (role IN ('teacher', 'owner'))
+        role TEXT NOT NULL CHECK (role IN ('teacher', 'owner', 'staff'))
       )
     `);
 
@@ -73,6 +73,33 @@ const initDb = async () => {
         active INTEGER NOT NULL DEFAULT 1
       )
     `);
+
+    // 2.1. Safe migration: add photo_url column if it doesn't already exist
+    try {
+      await query.run('ALTER TABLE students ADD COLUMN photo_url TEXT');
+      console.log('Migration: photo_url column added to students table.');
+    } catch (e) {
+      // Column already exists — this is expected on subsequent starts, ignore silently
+      if (!e.message || !e.message.includes('duplicate column')) {
+        const msg = e.message || '';
+        if (!msg.includes('already exists') && !msg.includes('duplicate')) {
+          throw e;
+        }
+      }
+    }
+
+    // 2.2 Safe migration: add teacher_id column if it doesn't already exist
+    try {
+      await query.run('ALTER TABLE students ADD COLUMN teacher_id INTEGER REFERENCES users(id)');
+      console.log('Migration: teacher_id column added to students table.');
+    } catch (e) {
+      if (!e.message || !e.message.includes('duplicate column')) {
+        const msg = e.message || '';
+        if (!msg.includes('already exists') && !msg.includes('duplicate')) {
+          throw e;
+        }
+      }
+    }
 
     // 3. Create Attendance Table
     await query.run(`
@@ -107,25 +134,82 @@ const initDb = async () => {
       )
     `);
 
-    // 4. Seed Default Users if empty
-    const userCount = await query.get('SELECT COUNT(*) as count FROM users');
-    if (userCount.count === 0) {
-      console.log('Seeding default users...');
-      const teacherHash = bcrypt.hashSync('teacher123', 10);
-      const ownerHash = bcrypt.hashSync('owner123', 10);
+    // 3.7 Create Staff Members Table
+    await query.run(`
+      CREATE TABLE IF NOT EXISTS staff_members (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        date_added TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        photo_url TEXT
+      )
+    `);
 
-      await query.run(
-        'INSERT INTO users (name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?)',
-        ['Priya Sharma', 'teacher', teacherHash, 'teacher-google@gmail.com', 'teacher']
-      );
-      await query.run(
-        'INSERT INTO users (name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?)',
-        ['Rohan Sen', 'owner', ownerHash, 'owner-google@gmail.com', 'owner']
-      );
-      console.log('Default users seeded successfully!');
+    // 3.8 Create Staff Attendance Table
+    await query.run(`
+      CREATE TABLE IF NOT EXISTS staff_attendance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        staff_member_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('Present', 'Absent')),
+        marked_by TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (staff_member_id) REFERENCES staff_members(id) ON DELETE CASCADE,
+        UNIQUE(staff_member_id, date)
+      )
+    `);
+
+    // 4. Force Reset & Seed EXACT 4 Users
+    console.log('Resetting users to exact 4 required accounts...');
+    
+    try {
+      await query.run('PRAGMA foreign_keys = OFF');
+      await query.run('DROP TABLE IF EXISTS users');
+      await query.run(`
+        CREATE TABLE users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          username TEXT UNIQUE,
+          password TEXT,
+          google_email TEXT UNIQUE,
+          role TEXT NOT NULL CHECK (role IN ('teacher', 'owner', 'staff'))
+        )
+      `);
+      await query.run('PRAGMA foreign_keys = ON');
+    } catch (err) {
+      console.warn('Re-creating users table warning:', err.message);
     }
 
-    // Student roster starts clean and empty.
+    const rdHash = bcrypt.hashSync('rama@7761', 10);
+    const lnHash = bcrypt.hashSync('lnhnk@34', 10);
+    const teacher1Hash = bcrypt.hashSync('Teacher@3124', 10);
+    const teacher2Hash = bcrypt.hashSync('Teacher@9834', 10);
+
+    // 1. Owner: Principal
+    await query.run(
+      'INSERT INTO users (id, name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [1, 'Principal', 'rd', rdHash, 'owner-google@gmail.com', 'owner']
+    );
+
+    // 2. Staff: LN
+    await query.run(
+      'INSERT INTO users (id, name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [2, 'LN', 'ln', lnHash, 'staff-google@gmail.com', 'staff']
+    );
+
+    // 3. Teacher 1
+    await query.run(
+      'INSERT INTO users (id, name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [3, 'Teacher 1', 'teacher1', teacher1Hash, 'teacher1-google@gmail.com', 'teacher']
+    );
+
+    // 4. Teacher 2
+    await query.run(
+      'INSERT INTO users (id, name, username, password, google_email, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [4, 'Teacher 2', 'teacher2', teacher2Hash, 'teacher2-google@gmail.com', 'teacher']
+    );
+
+    console.log('Successfully seeded the 4 clean accounts: Principal (rd), LN (ln), Teacher 1 (teacher1), Teacher 2 (teacher2)!');
   } catch (err) {
     console.error('Database initialization error:', err);
     throw err;

@@ -78,7 +78,7 @@ const startScheduler = (query) => {
 // Public notify methods
 const notifySubmission = (teacherName, presentCount, absentCount) => {
   logNotification(
-    `SUCCESS: Attendance successfully marked for today by ${teacherName}. Present: ${presentCount}, Absent: ${absentCount}. (Owner Rohan Sen notified)`,
+    `SUCCESS: Attendance successfully marked for today by ${teacherName}. Present: ${presentCount}, Absent: ${absentCount}. (Owner RD notified)`,
     'success'
   );
 };
@@ -153,7 +153,7 @@ const sendMonthlyReport = async (query, year, month) => {
         <h2 style="color: #4f46e5; margin-bottom: 4px;">My Chhota School</h2>
         <h3 style="color: #1e293b; margin-top: 0; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px;">Monthly Attendance Report: ${monthName} ${year}</h3>
         
-        <p>Dear Rohan Sen (Owner),</p>
+        <p>Dear RD (Owner),</p>
         <p>Here is the monthly analysis of student attendance for your playschool:</p>
         
         <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 20px 0;">
@@ -217,13 +217,13 @@ const sendMonthlyReport = async (query, year, month) => {
       });
 
       logNotification(
-        `EMAIL DISPATCHED: Monthly report for ${monthName} ${year} sent to Rohan Sen (${ownerEmail}).`,
+        `EMAIL DISPATCHED: Monthly report for ${monthName} ${year} sent to RD (${ownerEmail}).`,
         'success'
       );
     } else {
       // Simulated delivery fallback: write html format directly into logs for verification
       logNotification(
-        `EMAIL SIMULATION: Monthly report email for ${monthName} ${year} generated successfully for Rohan Sen (${ownerEmail}).\n---------------------------------------\n${reportHtml}\n---------------------------------------`,
+        `EMAIL SIMULATION: Monthly report email for ${monthName} ${year} generated successfully for RD (${ownerEmail}).\n---------------------------------------\n${reportHtml}\n---------------------------------------`,
         'success'
       );
     }

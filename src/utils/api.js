@@ -51,12 +51,30 @@ export const api = {
     }
   },
 
+  // Teachers
+  getTeachers: async () => {
+    const res = await fetch(`${API_BASE}/teachers`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   // Students
   getStudents: async (activeOnly = true) => {
     const url = activeOnly ? `${API_BASE}/students?active=1` : `${API_BASE}/students`;
     const res = await fetch(url, {
       method: 'GET',
       headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  assignStudentTeacher: async (id, teacher_id) => {
+    const res = await fetch(`${API_BASE}/students/${id}/teacher`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ teacher_id }),
     });
     return handleResponse(res);
   },
@@ -83,6 +101,15 @@ export const api = {
     const res = await fetch(`${API_BASE}/students/${id}`, {
       method: 'DELETE',
       headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  uploadStudentPhoto: async (id, photoBase64) => {
+    const res = await fetch(`${API_BASE}/students/${id}/photo`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ photo_url: photoBase64 }),
     });
     return handleResponse(res);
   },
@@ -252,6 +279,67 @@ export const api = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ username, password, newUsername }),
+    });
+    return handleResponse(res);
+  },
+
+  // Staff Management
+  getStaffMembers: async (activeOnly = true) => {
+    const url = activeOnly ? `${API_BASE}/staff-members?active=1` : `${API_BASE}/staff-members`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  addStaffMember: async (name) => {
+    const res = await fetch(`${API_BASE}/staff-members`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ name }),
+    });
+    return handleResponse(res);
+  },
+
+  updateStaffMember: async (id, { name, active }) => {
+    const res = await fetch(`${API_BASE}/staff-members/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ name, active }),
+    });
+    return handleResponse(res);
+  },
+
+  deleteStaffMember: async (id) => {
+    const res = await fetch(`${API_BASE}/staff-members/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getStaffAttendance: async (date) => {
+    const res = await fetch(`${API_BASE}/staff-attendance?date=${date}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  submitStaffAttendance: async (date, attendance) => {
+    const res = await fetch(`${API_BASE}/staff-attendance`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ date, attendance }),
+    });
+    return handleResponse(res);
+  },
+
+  getStaffMonthlyLog: async (year, month) => {
+    const res = await fetch(`${API_BASE}/staff-attendance/monthly-log?year=${year}&month=${month}`, {
+      method: 'GET',
+      headers: getHeaders(),
     });
     return handleResponse(res);
   }

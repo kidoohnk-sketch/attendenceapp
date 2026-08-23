@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../utils/api';
 
 export default function TeacherDashboard({ user, onLogout }) {
@@ -41,9 +41,57 @@ export default function TeacherDashboard({ user, onLogout }) {
   const [rosterStudents, setRosterStudents] = useState([]); // for manage panel
   const [removingStudent, setRemovingStudent] = useState(null); // id
   const [showRoster, setShowRoster] = useState(false); // toggle roster list
+  const [uploadingPhoto, setUploadingPhoto] = useState(null); // student id being uploaded
+  const photoInputRef = useRef({});
 
   // Years array
   const years = [2026, 2027, 2028, 2029, 2030];
+
+  // Compress image to base64 before upload (max 800px wide, 80% JPEG quality)
+  const compressImage = useCallback((file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 800;
+          let { width, height } = img;
+          if (width > MAX) {
+            height = Math.round((height * MAX) / width);
+            width = MAX;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  // Upload photo for a student
+  const handlePhotoUpload = useCallback(async (student, file) => {
+    if (!file) return;
+    setUploadingPhoto(student.id);
+    setError('');
+    try {
+      const compressed = await compressImage(file);
+      await api.uploadStudentPhoto(student.id, compressed);
+      setSuccess(`Photo updated for "${student.name}"!`);
+      const studentList = await api.getStudents(true);
+      setStudents(studentList);
+      setRosterStudents(studentList);
+    } catch (err) {
+      setError('Failed to upload photo: ' + err.message);
+    } finally {
+      setUploadingPhoto(null);
+    }
+  }, [compressImage]);
   
   // Months array — hide Jan–Aug for 2026 (school started Sep 2026)
   const allMonths = [
@@ -331,10 +379,10 @@ export default function TeacherDashboard({ user, onLogout }) {
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(search.toLowerCase())
   );
-
   const markedCount = Object.keys(attendance).length;
   const progressPercent = students.length > 0 ? Math.round((markedCount / students.length) * 100) : 0;
   const allMarked = markedCount === students.length;
+
 
   // Shared Student Manager Panel (Add + Remove)
   const studentManagerPanel = (
@@ -377,29 +425,48 @@ export default function TeacherDashboard({ user, onLogout }) {
       </button>
 
       {showRoster && (
-        <div style={{ marginTop: '12px', maxHeight: '240px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+        <div style={{ marginTop: '12px', maxHeight: '280px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
           {rosterStudents.length > 0 ? (
-            rosterStudents.map(s => (
-              <div key={s.id} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                borderBottom: '1px solid var(--border-color)',
-                fontSize: '14px'
-              }}>
-                <span style={{ fontWeight: '600' }}>{s.name}</span>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  style={{ minHeight: '30px', padding: '0 12px', fontSize: '12px' }}
-                  disabled={removingStudent === s.id}
-                  onClick={() => handleRemoveStudent(s)}
-                >
-                  {removingStudent === s.id ? 'Removing...' : '✕ Remove'}
-                </button>
-              </div>
-            ))
+            rosterStudents.map(s => {
+              const initials = s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+              return (
+                <div key={s.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 12px',
+                  borderBottom: '1px solid var(--border-color)',
+                  fontSize: '14px'
+                }}>
+                  {s.photo_url
+                    ? <img src={s.photo_url} alt={s.name} className="roster-avatar-img" />
+                    : <div className="roster-avatar-initials">{initials}</div>
+                  }
+                  <span style={{ fontWeight: '600', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                  <label
+                    className={`photo-upload-btn${uploadingPhoto === s.id ? ' uploading' : ''}`}
+                    title="Upload photo"
+                  >
+                    {uploadingPhoto === s.id ? '⏳' : '📷'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="photo-file-input"
+                      onChange={(e) => handlePhotoUpload(s, e.target.files[0])}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    style={{ minHeight: '30px', padding: '0 12px', fontSize: '12px' }}
+                    disabled={removingStudent === s.id}
+                    onClick={() => handleRemoveStudent(s)}
+                  >
+                    {removingStudent === s.id ? 'Removing...' : '✕ Remove'}
+                  </button>
+                </div>
+              );
+            })
           ) : (
             <p style={{ padding: '12px', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>No active students in roster.</p>
           )}
@@ -416,7 +483,7 @@ export default function TeacherDashboard({ user, onLogout }) {
       {/* Header Banner */}
       <header className="app-header">
         <div className="header-brand">
-          <img src="/logo.jpeg" alt="Logo" className="header-logo" style={{ borderRadius: '50%', border: '1px solid var(--border-color)' }} />
+          <img src="/logo.svg" alt="My Chhota School Logo" className="header-logo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
           <div className="header-title">
             <h1>My Chhota School</h1>
             <p>Teacher Attendance Portal</p>
@@ -490,8 +557,8 @@ export default function TeacherDashboard({ user, onLogout }) {
                 >
                   <span style={{ fontWeight: '700', fontSize: '16px', color: 'var(--primary)' }}>{m.name}</span>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                    <div>📂 Marked: {logsCount} days</div>
-                    <div style={{ color: 'var(--warning-text)' }}>🎉 Holidays: {holidaysCount}</div>
+                    <div>📅 Marked: {logsCount} days</div>
+                    <div style={{ color: 'var(--warning-text)' }}>🏖️ Holidays: {holidaysCount}</div>
                   </div>
                 </div>
               );
@@ -635,7 +702,7 @@ export default function TeacherDashboard({ user, onLogout }) {
             <div className="alert alert-warning" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>
               {dayStatus.isSundayHoliday
                 ? '🌅 Sunday - Weekly Holiday. Attendance roll is disabled.'
-                : <>🎉 This day is marked as a Holiday: <strong>{dayStatus.holidayDescription}</strong>. Attendance roll is disabled.</> }
+                : <>🏖️ This day is marked as a Holiday: <strong>{dayStatus.holidayDescription}</strong>. Attendance roll is disabled.</> }
             </div>
           ) : (
             <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
@@ -723,7 +790,20 @@ export default function TeacherDashboard({ user, onLogout }) {
                     return (
                       <div key={student.id} className={cardClass}>
                         <div className="student-info">
-                          <div className="student-avatar">{initials}</div>
+                          <label className="student-avatar-wrapper" title="Upload photo">
+                            {student.photo_url
+                              ? <img src={student.photo_url} alt={student.name} className="student-avatar-img" />
+                              : <div className="student-avatar">{initials}</div>
+                            }
+                            <div className="photo-upload-overlay">📷</div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="photo-file-input"
+                              disabled={uploadingPhoto === student.id}
+                              onChange={(e) => handlePhotoUpload(student, e.target.files[0])}
+                            />
+                          </label>
                           <div className="student-name-text">{student.name}</div>
                         </div>
                         <div className="attendance-toggle">
@@ -759,7 +839,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                 <div className="bottom-action-bar-inner">
                   <div className="summary-indicator">
                     {allMarked ? (
-                      <span style={{ color: 'var(--success)' }}>✓ All students marked</span>
+                      <span style={{ color: 'var(--success)' }}>✅ All students marked</span>
                     ) : (
                       <span>Remaining: <strong>{students.length - markedCount}</strong></span>
                     )}
