@@ -502,6 +502,24 @@ export default function OwnerDashboard({ user, onLogout }) {
     }
   };
 
+  // Handle Staff Photo Upload by Owner
+  const handleStaffPhotoUpload = async (staffMember, file) => {
+    if (!file) return;
+    setUploadingPhoto(staffMember.id);
+    setError('');
+    setSuccess('');
+    try {
+      const photoUrl = await api.uploadPhoto(file);
+      await api.updateStaffMember(staffMember.id, { name: staffMember.name, active: staffMember.active, photoUrl });
+      setSuccess(`Photo updated for staff member "${staffMember.name}"!`);
+      await loadStaffData(selectedStaffDate);
+    } catch (err) {
+      setError('Failed to upload staff photo: ' + err.message);
+    } finally {
+      setUploadingPhoto(null);
+    }
+  };
+
   // Handle Save Edited Staff Name
   const handleSaveEditStaffName = async (staffId, active) => {
     if (!editingStaffName.trim()) {
@@ -940,80 +958,101 @@ export default function OwnerDashboard({ user, onLogout }) {
 
             {showStaffRoster && (
               <div className="student-manage-list">
-                {rosterStaff.map(member => (
-                  <div key={member.id} className={`student-manage-item ${member.active === 0 ? 'inactive' : ''}`}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {editingStaffId === member.id ? (
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {rosterStaff.map(member => {
+                  const initials = member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                  return (
+                    <div key={member.id} className={`student-manage-item ${member.active === 0 ? 'inactive' : ''}`}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                        <label className="photo-upload-btn-wrapper" title="Upload staff photo">
+                          {member.photo_url
+                            ? <img src={member.photo_url} alt={member.name} className="roster-avatar-img" />
+                            : <div className="roster-avatar-initials">{initials}</div>
+                          }
+                          <div className="photo-upload-overlay">📷</div>
                           <input
-                            type="text"
-                            className="form-control"
-                            style={{ fontSize: '14px', padding: '4px 8px', minHeight: '34px' }}
-                            value={editingStaffName}
-                            onChange={(e) => setEditingStaffName(e.target.value)}
-                            autoFocus
+                            type="file"
+                            accept="image/*"
+                            className="photo-file-input"
+                            disabled={uploadingPhoto === member.id}
+                            onChange={(e) => handleStaffPhotoUpload(member, e.target.files[0])}
                           />
+                        </label>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {editingStaffId === member.id ? (
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <input
+                                type="text"
+                                className="form-control"
+                                style={{ fontSize: '14px', padding: '4px 8px', minHeight: '34px' }}
+                                value={editingStaffName}
+                                onChange={(e) => setEditingStaffName(e.target.value)}
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-success"
+                                style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                                onClick={() => handleSaveEditStaffName(member.id, member.active)}
+                                disabled={updatingStaff === member.id}
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                                onClick={() => { setEditingStaffId(null); setEditingStaffName(''); }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="student-name-label">{member.name}</span>
+                              <span style={{ marginLeft: '8px', fontSize: '12px', color: member.active === 1 ? 'var(--success)' : 'var(--danger)' }}>
+                                ({member.active === 1 ? 'Active' : 'Inactive'})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="roster-actions-row">
+                        {editingStaffId !== member.id && (
                           <button
                             type="button"
-                            className="btn btn-success"
-                            style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
-                            onClick={() => handleSaveEditStaffName(member.id, member.active)}
-                            disabled={updatingStaff === member.id}
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
+                            onClick={() => { setEditingStaffId(member.id); setEditingStaffName(member.name); }}
                             className="btn btn-secondary"
-                            style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
-                            onClick={() => { setEditingStaffId(null); setEditingStaffName(''); }}
+                            style={{ minHeight: '32px', fontSize: '12px', padding: '0 10px' }}
                           >
-                            Cancel
+                            ✏️ Edit Name
                           </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <span style={{ fontWeight: '700', fontSize: '16px' }}>{member.name}</span>
-                          <span style={{ marginLeft: '10px', fontSize: '12px', color: member.active === 1 ? 'var(--success)' : 'var(--danger)' }}>
-                            ({member.active === 1 ? 'Active' : 'Inactive'})
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {editingStaffId !== member.id && (
+                        )}
+
                         <button
                           type="button"
-                          onClick={() => { setEditingStaffId(member.id); setEditingStaffName(member.name); }}
-                          className="btn btn-secondary"
-                          style={{ minHeight: '32px', fontSize: '12px', padding: '0 12px' }}
+                          onClick={() => handleToggleStaffActive(member)}
+                          className={`btn ${member.active === 1 ? 'btn-secondary' : 'btn-success'}`}
+                          style={{ minHeight: '32px', fontSize: '12px', padding: '0 10px' }}
+                          disabled={updatingStaff === member.id}
                         >
-                          ✏️ Edit Name
+                          {updatingStaff === member.id ? 'Updating...' : (member.active === 1 ? 'Mark Inactive' : 'Reactivate')}
                         </button>
-                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStaffActive(member)}
-                        className={`btn ${member.active === 1 ? 'btn-secondary' : 'btn-success'}`}
-                        style={{ minHeight: '32px', fontSize: '12px', padding: '0 12px' }}
-                        disabled={updatingStaff === member.id}
-                      >
-                        {updatingStaff === member.id ? 'Updating...' : (member.active === 1 ? 'Mark Inactive' : 'Reactivate')}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteStaffPermanently(member)}
-                        className="btn btn-danger"
-                        style={{ minHeight: '32px', fontSize: '12px', padding: '0 12px' }}
-                        disabled={deletingStaff === member.id}
-                      >
-                        {deletingStaff === member.id ? 'Deleting...' : '🗑️ Delete'}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStaffPermanently(member)}
+                          className="btn btn-danger"
+                          style={{ minHeight: '32px', fontSize: '12px', padding: '0 10px' }}
+                          disabled={deletingStaff === member.id}
+                        >
+                          {deletingStaff === member.id ? 'Deleting...' : '🗑️ Delete'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
