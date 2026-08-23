@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../utils/api';
 
 export default function TeacherDashboard({ user, onLogout }) {
-  // Navigation State
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(null); // 1-indexed (null means show month grid)
-  const [selectedDay, setSelectedDay] = useState(null); // 1-indexed (null means show day grid)
+  // Navigation State — default to Today's date for 0-click attendance marking!
+  const todayDate = new Date();
+  const [selectedYear, setSelectedYear] = useState(todayDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(todayDate.getMonth() + 1); // Default to today's month
+  const [selectedDay, setSelectedDay] = useState(todayDate.getDate()); // Default to today's day
   
   // Roster & Attendance states
   const [students, setStudents] = useState([]);
@@ -564,7 +565,31 @@ export default function TeacherDashboard({ user, onLogout }) {
       {error && <div className="alert alert-danger" id="teacher-error-alert">{error}</div>}
       {success && <div className="alert alert-success" id="teacher-success-alert">{success}</div>}
 
-      {/* LEVEL 1: SELECT MONTH (Default Homepage) */}
+      {/* Navigation Tabs for Teachers */}
+      <nav className="tabs" style={{ marginBottom: '16px' }}>
+        <button
+          className={`tab-btn ${selectedMonth === (new Date().getMonth() + 1) && selectedDay === new Date().getDate() ? 'active' : ''}`}
+          onClick={() => {
+            const d = new Date();
+            setSelectedYear(d.getFullYear());
+            setSelectedMonth(d.getMonth() + 1);
+            setSelectedDay(d.getDate());
+          }}
+        >
+          📍 Today's Attendance ({new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+        </button>
+        <button
+          className={`tab-btn ${!selectedDay ? 'active' : ''}`}
+          onClick={() => {
+            setSelectedMonth(null);
+            setSelectedDay(null);
+          }}
+        >
+          📅 Month & Day Calendar
+        </button>
+      </nav>
+
+      {/* LEVEL 1: SELECT MONTH */}
       {!selectedMonth && (
         <div>
           {/* Manage Students Panel */}
@@ -751,9 +776,39 @@ export default function TeacherDashboard({ user, onLogout }) {
               <button onClick={handleBackToDays} className="btn btn-secondary" style={{ minHeight: '38px', padding: '0 16px', fontSize: '14px' }}>
                 ← Back to Calendar
               </button>
-              <h2>
-                {months.find(m => m.value === selectedMonth).name} {selectedDay}, {selectedYear}
+              <h2 style={{ fontSize: '20px', margin: 0 }}>
+                {months.find(m => m.value === selectedMonth)?.name} {selectedDay}, {selectedYear}
               </h2>
+            </div>
+            
+            {/* Quick Action Helper Buttons for Teachers */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '13px', padding: '6px 14px', minHeight: '34px' }}
+                disabled={dayStatus.isLocked || dayStatus.isHoliday}
+                onClick={() => {
+                  const newMap = { ...attendance };
+                  students.forEach(s => { newMap[s.id] = 'Present'; });
+                  setAttendance(newMap);
+                }}
+              >
+                ✓ Mark All Present
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '13px', padding: '6px 14px', minHeight: '34px' }}
+                disabled={dayStatus.isLocked || dayStatus.isHoliday}
+                onClick={() => {
+                  const newMap = { ...attendance };
+                  students.forEach(s => { newMap[s.id] = 'Absent'; });
+                  setAttendance(newMap);
+                }}
+              >
+                ✕ Mark All Absent
+              </button>
             </div>
           </div>
 
