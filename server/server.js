@@ -499,7 +499,7 @@ app.get('/api/students', authenticate, async (req, res) => {
     const params = [];
     
     if (req.user.role === 'teacher') {
-      sql += ' WHERE teacher_id = ?';
+      sql += ' WHERE (teacher_id IS NULL OR teacher_id = ?)';
       params.push(req.user.id);
       
       if (active !== undefined) {
@@ -729,7 +729,7 @@ app.post('/api/staff-attendance', authenticate, requireRole(['staff', 'owner']),
   }
 
   try {
-    const timestamp = getIndiaISOString();
+    const timestamp = new Date().toISOString();
     const markedBy = req.user.name;
     let presentCount = 0;
     let absentCount = 0;
@@ -882,9 +882,7 @@ app.get('/api/attendance/status', authenticate, async (req, res) => {
     let isLocked = false;
     
     if (dateStr === todayStr) {
-      const indiaTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-      const hours = new Date(indiaTime).getHours();
-      isLocked = hours >= 12;
+      isLocked = false; // Today's attendance remains unlocked for submission/editing
     } else {
       isLocked = true; // Past submissions are locked by default
     }
@@ -938,22 +936,6 @@ app.post('/api/attendance', authenticate, async (req, res) => {
       return res.status(400).json({
         message: `Submission blocked. Date is marked as a Holiday: ${holiday.description}`
       });
-    }
-
-    // Check if today's records already exist
-    const existingRecords = await query.all('SELECT id FROM attendance WHERE date = ? LIMIT 1', [date]);
-    
-    if (existingRecords.length > 0) {
-      const now = new Date();
-      const todayStr = getIndiaDateString(now);
-      const indiaTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-      const hours = new Date(indiaTime).getHours();
-      
-      if (date === todayStr && hours >= 12) {
-        return res.status(403).json({
-          message: 'Submission locked. Daily attendance cannot be edited after 12:00 PM.'
-        });
-      }
     }
 
     // Save attendance in a transaction

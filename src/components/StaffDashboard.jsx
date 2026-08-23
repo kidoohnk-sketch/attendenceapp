@@ -437,7 +437,7 @@ export default function StaffDashboard({ user, onLogout }) {
                         </button>
                       </div>
                     ) : (
-                      <span style={{ fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{s.name}</span>
+                      <span style={{ fontWeight: '600', wordBreak: 'break-word', overflowWrap: 'break-word', display: 'block', lineHeight: '1.3' }}>{s.name}</span>
                     )}
                   </div>
 
@@ -809,7 +809,7 @@ export default function StaffDashboard({ user, onLogout }) {
                               </div>
                             ) : (
                               <>
-                                <span>{member.name}</span>
+                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.3' }}>{member.name}</span>
                                 <button
                                   type="button"
                                   title="Edit staff member name"

@@ -153,15 +153,7 @@ export default function TeacherDashboard({ user, onLogout }) {
 
       // B. Fetch day status (Holiday and locking status)
       const targetDate = formatDateString(selectedYear, selectedMonth, day);
-      const statusRes = await api.getAttendanceStatus(targetDate);
-      
-      // We need to fetch the status of the specific date
-      const statusUrl = `/api/attendance/status?date=${targetDate}`;
-      const token = localStorage.getItem('token');
-      const statusFetch = await fetch(statusUrl, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dateStatus = await statusFetch.json();
+      const dateStatus = await api.getAttendanceStatus(targetDate);
 
       // C. Sunday override — auto-holiday, no DB entry needed
       const dayOfWeek = new Date(selectedYear, selectedMonth - 1, day).getDay();
@@ -495,7 +487,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                         </button>
                       </div>
                     ) : (
-                      <span style={{ fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{s.name}</span>
+                      <span style={{ fontWeight: '600', wordBreak: 'break-word', overflowWrap: 'break-word', display: 'block', lineHeight: '1.3' }}>{s.name}</span>
                     )}
                   </div>
 
@@ -902,7 +894,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                               </div>
                             ) : (
                               <>
-                                <span>{student.name}</span>
+                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.3' }}>{student.name}</span>
                                 <button
                                   type="button"
                                   title="Edit student name"

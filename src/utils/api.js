@@ -132,8 +132,9 @@ export const api = {
     return handleResponse(res);
   },
 
-  getAttendanceStatus: async () => {
-    const res = await fetch(`${API_BASE}/attendance/status`, {
+  getAttendanceStatus: async (date) => {
+    const url = date ? `${API_BASE}/attendance/status?date=${date}` : `${API_BASE}/attendance/status`;
+    const res = await fetch(url, {
       method: 'GET',
       headers: getHeaders(),
     });

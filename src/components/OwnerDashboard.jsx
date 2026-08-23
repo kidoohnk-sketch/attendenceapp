@@ -134,6 +134,7 @@ export default function OwnerDashboard({ user, onLogout }) {
       const records = await api.getAttendance(todayStr);
       const statusRes = await api.getAttendanceStatus();
       const activeStudentsList = await api.getStudents(true);
+      setAllStudents(activeStudentsList);
       
       const presentCount = records.filter(r => r.status === 'Present').length;
       const absentCount = records.filter(r => r.status === 'Absent').length;
@@ -193,6 +194,7 @@ export default function OwnerDashboard({ user, onLogout }) {
     try {
       const records = await api.getAttendance(date);
       const activeStudentsList = await api.getStudents(true);
+      setAllStudents(activeStudentsList);
       
       let markedBy = 'N/A';
       let timestamp = '';
@@ -626,8 +628,11 @@ export default function OwnerDashboard({ user, onLogout }) {
         <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
           Today's Overview
         </button>
+        <button className={`tab-btn ${activeTab === 'student-attendance' ? 'active' : ''}`} onClick={() => { setActiveTab('student-attendance'); loadStudents(); }}>
+          🎓 Student Attendance
+        </button>
         <button className={`tab-btn ${activeTab === 'staff' ? 'active' : ''}`} onClick={() => setActiveTab('staff')}>
-          Staff Management & Attendance
+          👨‍💼 Staff Management & Attendance
         </button>
         <button className={`tab-btn ${activeTab === 'past' ? 'active' : ''}`} onClick={() => setActiveTab('past')}>
           Past Records
@@ -636,13 +641,13 @@ export default function OwnerDashboard({ user, onLogout }) {
           Monthly Report
         </button>
         <button className={`tab-btn ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}>
-          Student Management
+          Student Roster
         </button>
         <button className={`tab-btn ${activeTab === 'holidays' ? 'active' : ''}`} onClick={() => setActiveTab('holidays')}>
-          Holidays Manager
+          Holidays
         </button>
         <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>
-          System Logs
+          Logs
         </button>
       </nav>
 
@@ -673,8 +678,34 @@ export default function OwnerDashboard({ user, onLogout }) {
 
           {/* Submission Details & Principal Student Roll Call */}
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <h3 style={{ margin: 0 }}>Today's Student Attendance Roll Call</h3>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px', padding: '4px 10px', minHeight: '30px' }}
+                  onClick={() => {
+                    const newMap = { ...todayStudentAttendance };
+                    allStudents.filter(s => s.active === 1).forEach(s => { newMap[s.id] = 'Present'; });
+                    setTodayStudentAttendance(newMap);
+                  }}
+                >
+                  ✓ All Present
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px', padding: '4px 10px', minHeight: '30px' }}
+                  onClick={() => {
+                    const newMap = { ...todayStudentAttendance };
+                    allStudents.filter(s => s.active === 1).forEach(s => { newMap[s.id] = 'Absent'; });
+                    setTodayStudentAttendance(newMap);
+                  }}
+                >
+                  ✕ All Absent
+                </button>
+              </div>
               {todayStats.submitted && (
                 <span className="badge badge-success">
                   Submitted by {todayStats.markedBy} at {new Date(todayStats.timestamp).toLocaleTimeString()}
@@ -716,6 +747,113 @@ export default function OwnerDashboard({ user, onLogout }) {
                             onClick={() => setTodayStudentAttendance(prev => ({ ...prev, [student.id]: 'Absent' }))}
                             className={`btn ${status === 'Absent' ? 'btn-danger' : 'btn-secondary'}`}
                             style={{ minHeight: '36px', padding: '0 16px', fontSize: '14px' }}
+                          >
+                            Absent
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSubmitTodayStudentAttendance}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: '700' }}
+                  disabled={submittingTodayAttendance}
+                >
+                  {submittingTodayAttendance ? 'Submitting Student Attendance...' : 'Save & Submit Student Attendance as Principal'}
+                </button>
+              </div>
+            ) : (
+              <p style={{ color: 'var(--text-muted)' }}>No active students in roster.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB CONTENT: STUDENT ATTENDANCE */}
+      {activeTab === 'student-attendance' && (
+        <div>
+          <div className="card" style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <h3 style={{ margin: 0 }}>🎓 Mark Student Attendance (Principal Access)</h3>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '13px', padding: '6px 12px', minHeight: '34px' }}
+                  onClick={() => {
+                    const newMap = { ...todayStudentAttendance };
+                    allStudents.filter(s => s.active === 1).forEach(s => { newMap[s.id] = 'Present'; });
+                    setTodayStudentAttendance(newMap);
+                  }}
+                >
+                  ✓ Mark All Present
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '13px', padding: '6px 12px', minHeight: '34px' }}
+                  onClick={() => {
+                    const newMap = { ...todayStudentAttendance };
+                    allStudents.filter(s => s.active === 1).forEach(s => { newMap[s.id] = 'Absent'; });
+                    setTodayStudentAttendance(newMap);
+                  }}
+                >
+                  ✕ Mark All Absent
+                </button>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              As Principal, you have direct authorization to mark, verify, or update student attendance for any active student in the school.
+            </p>
+
+            {allStudents.filter(s => s.active === 1).length > 0 ? (
+              <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                  {allStudents.filter(s => s.active === 1).map(student => {
+                    const status = todayStudentAttendance[student.id] || 'Present';
+                    const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    return (
+                      <div
+                        key={student.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 16px',
+                          border: status === 'Present' ? '1px solid var(--success)' : '1px solid var(--danger)',
+                          borderRadius: '10px',
+                          backgroundColor: status === 'Present' ? 'var(--success-light)' : 'var(--danger-light)',
+                          transition: 'var(--transition)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                          {student.photo_url ? (
+                            <img src={student.photo_url} alt={student.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div className="student-avatar">{initials}</div>
+                          )}
+                          <span style={{ fontWeight: '700', fontSize: '16px', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.3' }}>{student.name}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setTodayStudentAttendance(prev => ({ ...prev, [student.id]: 'Present' }))}
+                            className={`btn ${status === 'Present' ? 'btn-success' : 'btn-secondary'}`}
+                            style={{ minHeight: '38px', padding: '0 18px', fontSize: '14px', fontWeight: '700' }}
+                          >
+                            Present
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTodayStudentAttendance(prev => ({ ...prev, [student.id]: 'Absent' }))}
+                            className={`btn ${status === 'Absent' ? 'btn-danger' : 'btn-secondary'}`}
+                            style={{ minHeight: '38px', padding: '0 18px', fontSize: '14px', fontWeight: '700' }}
                           >
                             Absent
                           </button>
