@@ -118,7 +118,7 @@
     <script>
       // Automatic cache buster for PWA updates
       (function() {
-        const CURRENT_VERSION = 'v15';
+        const CURRENT_VERSION = 'v16';
         if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
           localStorage.setItem('app_version', CURRENT_VERSION);
           if ('serviceWorker' in navigator) {
@@ -139,7 +139,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
-            .register('/sw.js?v=15')
+            .register('/sw.js?v=16')
             .then((reg) => console.log('Service Worker registered:', reg.scope))
             .catch((err) => console.log('Service Worker registration failed:', err));
         });

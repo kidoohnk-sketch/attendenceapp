@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chhota-school-v15';
+const CACHE_NAME = 'chhota-school-v16';
 
 // Install Service Worker - Skip waiting immediately
 self.addEventListener('install', (event) => {
