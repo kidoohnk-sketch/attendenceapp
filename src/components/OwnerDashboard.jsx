@@ -738,34 +738,33 @@ export default function OwnerDashboard({ user, onLogout }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                   {allStudents.filter(s => s.active === 1).map(student => {
                     const status = todayStudentAttendance[student.id] || 'Present';
+                    const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    let cardClass = "student-card";
+                    if (status === 'Present') cardClass += " marked-present";
+                    if (status === 'Absent') cardClass += " marked-absent";
+
                     return (
-                      <div
-                        key={student.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '12px 16px',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '10px',
-                          backgroundColor: 'var(--bg-primary)'
-                        }}
-                      >
-                        <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                      <div key={student.id} className={cardClass}>
+                        <div className="student-info">
+                          {student.photo_url ? (
+                            <img src={student.photo_url} alt={student.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div className="student-avatar">{initials}</div>
+                          )}
+                          <span className="student-name-label">{student.name}</span>
+                        </div>
+                        <div className="attendance-toggle">
                           <button
                             type="button"
                             onClick={() => setTodayStudentAttendance(prev => ({ ...prev, [student.id]: 'Present' }))}
-                            className={`btn ${status === 'Present' ? 'btn-success' : 'btn-secondary'}`}
-                            style={{ minHeight: '36px', padding: '0 16px', fontSize: '14px' }}
+                            className={`attendance-toggle-btn btn-present ${status === 'Present' ? 'active' : ''}`}
                           >
                             Present
                           </button>
                           <button
                             type="button"
                             onClick={() => setTodayStudentAttendance(prev => ({ ...prev, [student.id]: 'Absent' }))}
-                            className={`btn ${status === 'Absent' ? 'btn-danger' : 'btn-secondary'}`}
-                            style={{ minHeight: '36px', padding: '0 16px', fontSize: '14px' }}
+                            className={`attendance-toggle-btn btn-absent ${status === 'Absent' ? 'active' : ''}`}
                           >
                             Absent
                           </button>
@@ -855,43 +854,32 @@ export default function OwnerDashboard({ user, onLogout }) {
                   {allStudents.filter(s => s.active === 1).map(student => {
                     const status = todayStudentAttendance[student.id] || 'Present';
                     const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    let cardClass = "student-card";
+                    if (status === 'Present') cardClass += " marked-present";
+                    if (status === 'Absent') cardClass += " marked-absent";
+
                     return (
-                      <div
-                        key={student.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '12px 16px',
-                          border: status === 'Present' ? '1px solid var(--success)' : '1px solid var(--danger)',
-                          borderRadius: '10px',
-                          backgroundColor: status === 'Present' ? 'var(--success-light)' : 'var(--danger-light)',
-                          transition: 'var(--transition)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                      <div key={student.id} className={cardClass}>
+                        <div className="student-info">
                           {student.photo_url ? (
                             <img src={student.photo_url} alt={student.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
                           ) : (
                             <div className="student-avatar">{initials}</div>
                           )}
-                          <span style={{ fontWeight: '700', fontSize: '16px', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.3' }}>{student.name}</span>
+                          <span className="student-name-label">{student.name}</span>
                         </div>
-
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div className="attendance-toggle">
                           <button
                             type="button"
                             onClick={() => setTodayStudentAttendance(prev => ({ ...prev, [student.id]: 'Present' }))}
-                            className={`btn ${status === 'Present' ? 'btn-success' : 'btn-secondary'}`}
-                            style={{ minHeight: '38px', padding: '0 18px', fontSize: '14px', fontWeight: '700' }}
+                            className={`attendance-toggle-btn btn-present ${status === 'Present' ? 'active' : ''}`}
                           >
                             Present
                           </button>
                           <button
                             type="button"
                             onClick={() => setTodayStudentAttendance(prev => ({ ...prev, [student.id]: 'Absent' }))}
-                            className={`btn ${status === 'Absent' ? 'btn-danger' : 'btn-secondary'}`}
-                            style={{ minHeight: '38px', padding: '0 18px', fontSize: '14px', fontWeight: '700' }}
+                            className={`attendance-toggle-btn btn-absent ${status === 'Absent' ? 'active' : ''}`}
                           >
                             Absent
                           </button>

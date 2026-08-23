@@ -609,10 +609,11 @@ h1, h2, h3, h4, h5, h6 {
   z-index: -1;
 }
 
-.student-name-text {
-  font-weight: 600;
+.student-name-text,
+.student-name-label {
+  font-weight: 700;
   font-size: 16px;
-  word-break: break-word;
+  word-break: normal;
   overflow-wrap: break-word;
   min-width: 0;
   flex: 1;
@@ -864,25 +865,53 @@ h1, h2, h3, h4, h5, h6 {
   border-bottom: none;
 }
 
-/* Mobile Responsive Optimization for Full Name Visibility */
+/* Mobile Responsive Optimization for Full Name Visibility & Button Alignment */
 @media (max-width: 640px) {
   .student-card {
-    padding: 12px;
-    gap: 10px;
+    padding: 14px;
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
   }
-  .student-name-text {
+  .student-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .student-name-text,
+  .student-name-label {
     font-size: 15px;
+    font-weight: 700;
+    word-break: normal;
+    overflow-wrap: break-word;
+    flex: 1;
+    min-width: 0;
+  }
+  .attendance-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 6px;
   }
   .attendance-toggle-btn {
-    padding: 10px 8px;
-    font-size: 13px;
+    width: 100%;
+    padding: 10px 4px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    box-sizing: border-box;
   }
   .attendance-table th, 
   .attendance-table td {
     padding: 10px 10px;
     font-size: 14px;
     white-space: normal;
-    word-break: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
   }
   .app-header {
