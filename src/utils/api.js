@@ -132,6 +132,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  clearAttendance: async (date) => {
+    const res = await fetch(`${API_BASE}/attendance?date=${date}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   getAttendanceStatus: async (date) => {
     const url = date ? `${API_BASE}/attendance/status?date=${date}` : `${API_BASE}/attendance/status`;
     const res = await fetch(url, {
@@ -333,6 +341,14 @@ export const api = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ date, attendance }),
+    });
+    return handleResponse(res);
+  },
+
+  clearStaffAttendance: async (date) => {
+    const res = await fetch(`${API_BASE}/staff-attendance?date=${date}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
     });
     return handleResponse(res);
   },

@@ -751,6 +751,60 @@ export default function StaffDashboard({ user, onLogout }) {
                 </div>
               </div>
 
+              {/* Quick Action Helper Buttons for Staff */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '13px', padding: '6px 14px', minHeight: '34px' }}
+                  disabled={dayStatus.isLocked || dayStatus.isHoliday}
+                  onClick={() => {
+                    const newMap = { ...attendance };
+                    staffList.forEach(s => { newMap[s.id] = 'Present'; });
+                    setAttendance(newMap);
+                  }}
+                >
+                  ✓ Mark All Present
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '13px', padding: '6px 14px', minHeight: '34px' }}
+                  disabled={dayStatus.isLocked || dayStatus.isHoliday}
+                  onClick={() => {
+                    const newMap = { ...attendance };
+                    staffList.forEach(s => { newMap[s.id] = 'Absent'; });
+                    setAttendance(newMap);
+                  }}
+                >
+                  ✕ Mark All Absent
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ fontSize: '13px', padding: '6px 14px', minHeight: '34px' }}
+                  disabled={dayStatus.isLocked || dayStatus.isHoliday}
+                  onClick={async () => {
+                    const targetDate = formatDateString(selectedYear, selectedMonth, selectedDay);
+                    if (!window.confirm(`Clear staff attendance selection for ${targetDate}?`)) return;
+                    try {
+                      if (dayStatus.submitted) {
+                        await api.clearStaffAttendance(targetDate);
+                        setSuccess(`Staff attendance for ${targetDate} cleared from database!`);
+                      } else {
+                        setSuccess('Staff attendance selections reset.');
+                      }
+                      setAttendance({});
+                      await loadDayDetails(selectedDay);
+                    } catch (err) {
+                      setError('Failed to clear staff attendance: ' + err.message);
+                    }
+                  }}
+                >
+                  🧹 Clear Attendance
+                </button>
+              </div>
+
               {/* Search filter */}
               <div className="search-bar">
                 <span className="search-icon">🔍</span>

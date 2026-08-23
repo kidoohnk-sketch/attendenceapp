@@ -968,6 +968,38 @@ app.post('/api/attendance', authenticate, async (req, res) => {
   }
 });
 
+// 7.5 Clear Student Attendance for a date
+app.delete('/api/attendance', authenticate, async (req, res) => {
+  const { date } = req.query;
+  if (!date) {
+    return res.status(400).json({ message: 'Date parameter (YYYY-MM-DD) is required.' });
+  }
+
+  try {
+    await query.run('DELETE FROM attendance WHERE date = ?', [date]);
+    logNotification(`Attendance records for ${date} cleared by ${req.user.name}.`, 'warning');
+    res.json({ message: `Attendance for ${date} cleared successfully.` });
+  } catch (err) {
+    res.status(500).json({ message: 'Error clearing attendance: ' + err.message });
+  }
+});
+
+// 7.6 Clear Staff Attendance for a date
+app.delete('/api/staff-attendance', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
+  const { date } = req.query;
+  if (!date) {
+    return res.status(400).json({ message: 'Date parameter is required.' });
+  }
+
+  try {
+    await query.run('DELETE FROM staff_attendance WHERE date = ?', [date]);
+    logNotification(`Staff attendance records for ${date} cleared by ${req.user.name}.`, 'warning');
+    res.json({ message: `Staff attendance for ${date} cleared successfully.` });
+  } catch (err) {
+    res.status(500).json({ message: 'Error clearing staff attendance: ' + err.message });
+  }
+});
+
 // 8. Get Monthly Report Summary per student
 app.get('/api/attendance/summary', authenticate, requireRole(['owner']), async (req, res) => {
   const { year, month } = req.query;

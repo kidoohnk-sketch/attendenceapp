@@ -705,6 +705,25 @@ export default function OwnerDashboard({ user, onLogout }) {
                 >
                   ✕ All Absent
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ fontSize: '12px', padding: '4px 10px', minHeight: '30px' }}
+                  onClick={async () => {
+                    const todayStr = getLocalDateString();
+                    if (!window.confirm(`Clear and reset today's student attendance for ${todayStr}?`)) return;
+                    try {
+                      await api.clearAttendance(todayStr);
+                      setSuccess(`Today's student attendance cleared successfully!`);
+                      setTodayStudentAttendance({});
+                      await loadTodayOverview();
+                    } catch (err) {
+                      setError('Failed to clear attendance: ' + err.message);
+                    }
+                  }}
+                >
+                  🧹 Clear
+                </button>
               </div>
               {todayStats.submitted && (
                 <span className="badge badge-success">
@@ -803,6 +822,25 @@ export default function OwnerDashboard({ user, onLogout }) {
                   }}
                 >
                   ✕ Mark All Absent
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ fontSize: '13px', padding: '6px 12px', minHeight: '34px' }}
+                  onClick={async () => {
+                    const todayStr = getLocalDateString();
+                    if (!window.confirm(`Clear and reset student attendance for ${todayStr}?`)) return;
+                    try {
+                      await api.clearAttendance(todayStr);
+                      setSuccess(`Student attendance for ${todayStr} cleared successfully!`);
+                      setTodayStudentAttendance({});
+                      await loadTodayOverview();
+                    } catch (err) {
+                      setError('Failed to clear attendance: ' + err.message);
+                    }
+                  }}
+                >
+                  🧹 Clear Attendance
                 </button>
               </div>
             </div>

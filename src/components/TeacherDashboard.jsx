@@ -809,6 +809,30 @@ export default function TeacherDashboard({ user, onLogout }) {
               >
                 ✕ Mark All Absent
               </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{ fontSize: '13px', padding: '6px 14px', minHeight: '34px' }}
+                disabled={dayStatus.isLocked || dayStatus.isHoliday}
+                onClick={async () => {
+                  const targetDate = formatDateString(selectedYear, selectedMonth, selectedDay);
+                  if (!window.confirm(`Clear attendance selection for ${targetDate}?`)) return;
+                  try {
+                    if (dayStatus.submitted) {
+                      await api.clearAttendance(targetDate);
+                      setSuccess(`Attendance for ${targetDate} cleared from database!`);
+                    } else {
+                      setSuccess('Attendance selections reset.');
+                    }
+                    setAttendance({});
+                    await loadDayDetails(selectedDay);
+                  } catch (err) {
+                    setError('Failed to clear attendance: ' + err.message);
+                  }
+                }}
+              >
+                🧹 Clear Attendance
+              </button>
             </div>
           </div>
 
