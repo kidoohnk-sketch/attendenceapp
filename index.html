@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
     <meta name="google" content="notranslate" />
 
-    <title>My Chhota School - Attendance Portal</title>
-    <meta name="description" content="A simple, premium Playschool Attendance portal for teachers to mark and owners to track daily attendance." />
+    <title>My Chhota school Nakkalagutta hanamkonda</title>
+    <meta name="description" content="A simple, premium Playschool Attendance portal for My Chhota School Nakkalagutta Hanamkonda." />
 
     <!-- Favicons / PWA -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/app-icon.svg" />
     <link rel="apple-touch-icon" href="/app-icon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#4338ca" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="My Chhota School" />
+    <meta name="apple-mobile-web-app-title" content="My Chhota school Nakkalagutta hanamkonda" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="color-scheme" content="light dark" />
 
     <!-- Open Graph / Social preview -->
-    <meta property="og:title" content="My Chhota School - Attendance Portal" />
+    <meta property="og:title" content="My Chhota school Nakkalagutta hanamkonda" />
     <meta property="og:description" content="A simple, premium Playschool Attendance portal for teachers to mark and owners to track daily attendance." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/logo.svg" />
@@ -118,7 +118,7 @@
     <script>
       // Automatic cache buster for PWA updates
       (function() {
-        const CURRENT_VERSION = 'v16';
+        const CURRENT_VERSION = 'v17';
         if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
           localStorage.setItem('app_version', CURRENT_VERSION);
           if ('serviceWorker' in navigator) {
@@ -139,7 +139,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
-            .register('/sw.js?v=16')
+            .register('/sw.js?v=17')
             .then((reg) => console.log('Service Worker registered:', reg.scope))
             .catch((err) => console.log('Service Worker registration failed:', err));
         });

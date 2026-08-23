@@ -572,6 +572,7 @@ export default function Login({ onLoginSuccess }) {
         
         <div className="login-header">
           <h1>My Chhota School</h1>
+          <p style={{ fontSize: '14px', color: '#FFCC29', fontWeight: '700', margin: '2px 0 4px 0' }}>Nakkalagutta Hanamkonda</p>
           <p>Daily Attendance Portal</p>
         </div>
 

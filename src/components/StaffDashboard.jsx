@@ -416,7 +416,8 @@ export default function StaffDashboard({ user, onLogout }) {
           <img src="/logo.svg" alt="My Chhota School Logo" className="header-logo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
           <div className="header-title">
             <h1>My Chhota School</h1>
-            <p>Staff Attendance Portal</p>
+            <p style={{ fontSize: '13px', color: '#FFCC29', fontWeight: '700', margin: '2px 0 0 0' }}>Nakkalagutta Hanamkonda</p>
+            <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>Staff Attendance Portal</p>
           </div>
         </div>
         <div className="header-user">

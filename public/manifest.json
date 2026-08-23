@@ -1,8 +1,14 @@
 {
-  "short_name": "Chhota School",
-  "name": "My Chhota School Attendance",
-  "description": "Daily student attendance tracking for playschool teachers and owners.",
+  "short_name": "My Chhota school Nakkalagutta hanamkonda",
+  "name": "My Chhota school Nakkalagutta hanamkonda",
+  "description": "Daily student and staff attendance portal for My Chhota School Nakkalagutta Hanamkonda.",
   "icons": [
+    {
+      "src": "/app-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    },
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",

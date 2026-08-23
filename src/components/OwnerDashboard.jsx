@@ -554,7 +554,8 @@ export default function OwnerDashboard({ user, onLogout }) {
           <img src="/logo.svg" alt="My Chhota School Logo" className="header-logo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
           <div className="header-title">
             <h1>My Chhota School</h1>
-            <p>Principal Administrative Portal (RD)</p>
+            <p style={{ fontSize: '13px', color: '#FFCC29', fontWeight: '700', margin: '2px 0 0 0' }}>Nakkalagutta Hanamkonda</p>
+            <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>Principal Administrative Portal (RD)</p>
           </div>
         </div>
         <div className="header-user">
