@@ -1427,68 +1427,70 @@ export default function OwnerDashboard({ user, onLogout }) {
               const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
               return (
                 <div key={student.id} className={`student-manage-item ${student.active === 0 ? 'inactive' : ''}`}>
-                  <label className="photo-upload-btn-wrapper" title="Upload student photo">
-                    {student.photo_url
-                      ? <img src={student.photo_url} alt={student.name} className="roster-avatar-img" />
-                      : <div className="roster-avatar-initials">{initials}</div>
-                    }
-                    <div className="photo-upload-overlay">📷</div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="photo-file-input"
-                      disabled={uploadingPhoto === student.id}
-                      onChange={(e) => handleOwnerPhotoUpload(student, e.target.files[0])}
-                    />
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <label className="photo-upload-btn-wrapper" title="Upload student photo">
+                      {student.photo_url
+                        ? <img src={student.photo_url} alt={student.name} className="roster-avatar-img" />
+                        : <div className="roster-avatar-initials">{initials}</div>
+                      }
+                      <div className="photo-upload-overlay">📷</div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="photo-file-input"
+                        disabled={uploadingPhoto === student.id}
+                        onChange={(e) => handleOwnerPhotoUpload(student, e.target.files[0])}
+                      />
+                    </label>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {editingStudentId === student.id ? (
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          style={{ fontSize: '14px', padding: '4px 8px', minHeight: '34px' }}
-                          value={editingStudentName}
-                          onChange={(e) => setEditingStudentName(e.target.value)}
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-success"
-                          style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
-                          onClick={() => handleSaveEditStudentName(student.id, student.active)}
-                          disabled={updatingStudent === student.id}
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
-                          onClick={() => { setEditingStudentId(null); setEditingStudentName(''); }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                          Added: {new Date(student.date_added).toLocaleDateString()}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {editingStudentId === student.id ? (
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <input
+                            type="text"
+                            className="form-control"
+                            style={{ fontSize: '14px', padding: '4px 8px', minHeight: '34px' }}
+                            value={editingStudentName}
+                            onChange={(e) => setEditingStudentName(e.target.value)}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-success"
+                            style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                            onClick={() => handleSaveEditStudentName(student.id, student.active)}
+                            disabled={updatingStudent === student.id}
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                            onClick={() => { setEditingStudentId(null); setEditingStudentName(''); }}
+                          >
+                            Cancel
+                          </button>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div>
+                          <span className="student-name-label">{student.name}</span>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            Added: {new Date(student.date_added).toLocaleDateString()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Section Assignment Dropdown */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Section Assignment & Action Controls Row */}
+                  <div className="roster-actions-row">
                     {editingStudentId !== student.id && (
                       <button
                         type="button"
                         onClick={() => { setEditingStudentId(student.id); setEditingStudentName(student.name); }}
                         className="btn btn-secondary"
-                        style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                        style={{ minHeight: '34px', fontSize: '13px', padding: '0 10px' }}
                       >
                         ✏️ Edit Name
                       </button>
@@ -1511,7 +1513,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                       type="button"
                       onClick={() => handleToggleStudentActive(student)}
                       className={`btn ${student.active === 1 ? 'btn-secondary' : 'btn-success'}`}
-                      style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                      style={{ minHeight: '34px', fontSize: '13px', padding: '0 10px' }}
                       disabled={updatingStudent === student.id}
                     >
                       {updatingStudent === student.id ? 'Updating...' : (student.active === 1 ? 'Deactivate' : 'Reactivate')}
@@ -1521,7 +1523,7 @@ export default function OwnerDashboard({ user, onLogout }) {
                       type="button"
                       onClick={() => handleDeleteStudentPermanently(student)}
                       className="btn btn-danger"
-                      style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                      style={{ minHeight: '34px', fontSize: '13px', padding: '0 10px' }}
                       disabled={deletingStudentPermanently === student.id}
                     >
                       {deletingStudentPermanently === student.id ? 'Deleting...' : '🗑️ Delete'}
