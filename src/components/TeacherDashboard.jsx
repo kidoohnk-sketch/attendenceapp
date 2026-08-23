@@ -42,6 +42,8 @@ export default function TeacherDashboard({ user, onLogout }) {
   const [removingStudent, setRemovingStudent] = useState(null); // id
   const [showRoster, setShowRoster] = useState(false); // toggle roster list
   const [uploadingPhoto, setUploadingPhoto] = useState(null); // student id being uploaded
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [editingStudentName, setEditingStudentName] = useState('');
   const photoInputRef = useRef({});
 
   // Years array
@@ -365,6 +367,27 @@ export default function TeacherDashboard({ user, onLogout }) {
     }
   };
 
+  // Save edited student name
+  const handleSaveEditStudentName = async (studentId, active) => {
+    if (!editingStudentName.trim()) {
+      setError('Student name cannot be empty.');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    try {
+      await api.updateStudent(studentId, { name: editingStudentName.trim(), active });
+      setSuccess(`Student name updated to "${editingStudentName.trim()}"!`);
+      setEditingStudentId(null);
+      setEditingStudentName('');
+      const studentList = await api.getStudents(true);
+      setRosterStudents(studentList);
+      setStudents(studentList);
+    } catch (err) {
+      setError('Failed to update student name: ' + err.message);
+    }
+  };
+
   // Load roster on mount
   useEffect(() => {
     loadRosterStudents();
@@ -421,7 +444,7 @@ export default function TeacherDashboard({ user, onLogout }) {
           setShowRoster(prev => !prev);
         }}
       >
-        {showRoster ? '▲ Hide Roster' : `▼ View & Remove Students (${rosterStudents.length} active)`}
+        {showRoster ? '▲ Hide Roster' : `▼ View & Edit Students (${rosterStudents.length} active)`}
       </button>
 
       {showRoster && (
@@ -442,7 +465,51 @@ export default function TeacherDashboard({ user, onLogout }) {
                     ? <img src={s.photo_url} alt={s.name} className="roster-avatar-img" />
                     : <div className="roster-avatar-initials">{initials}</div>
                   }
-                  <span style={{ fontWeight: '600', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                  
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {editingStudentId === s.id ? (
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          style={{ fontSize: '13px', padding: '2px 6px', minHeight: '30px' }}
+                          value={editingStudentName}
+                          onChange={(e) => setEditingStudentName(e.target.value)}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-success"
+                          style={{ minHeight: '30px', padding: '0 10px', fontSize: '12px' }}
+                          onClick={() => handleSaveEditStudentName(s.id, s.active)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ minHeight: '30px', padding: '0 10px', fontSize: '12px' }}
+                          onClick={() => { setEditingStudentId(null); setEditingStudentName(''); }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{s.name}</span>
+                    )}
+                  </div>
+
+                  {editingStudentId !== s.id && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ minHeight: '30px', padding: '0 10px', fontSize: '12px' }}
+                      onClick={() => { setEditingStudentId(s.id); setEditingStudentName(s.name); }}
+                    >
+                      ✏️ Edit
+                    </button>
+                  )}
+
                   <label
                     className={`photo-upload-btn${uploadingPhoto === s.id ? ' uploading' : ''}`}
                     title="Upload photo"
@@ -805,7 +872,48 @@ export default function TeacherDashboard({ user, onLogout }) {
                               onChange={(e) => handlePhotoUpload(student, e.target.files[0])}
                             />
                           </label>
-                          <div className="student-name-text">{student.name}</div>
+                          <div className="student-name-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {editingStudentId === student.id ? (
+                              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  style={{ fontSize: '13px', padding: '2px 6px', height: '28px' }}
+                                  value={editingStudentName}
+                                  onChange={(e) => setEditingStudentName(e.target.value)}
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-success"
+                                  style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                  onClick={() => handleSaveEditStudentName(student.id, student.active)}
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                  onClick={() => { setEditingStudentId(null); setEditingStudentName(''); }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span>{student.name}</span>
+                                <button
+                                  type="button"
+                                  title="Edit student name"
+                                  onClick={(e) => { e.stopPropagation(); setEditingStudentId(student.id); setEditingStudentName(student.name); }}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', opacity: 0.7, padding: '2px' }}
+                                >
+                                  ✏️
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                         <div className="attendance-toggle">
                           <button

@@ -41,6 +41,8 @@ export default function StaffDashboard({ user, onLogout }) {
   const [rosterStaff, setRosterStaff] = useState([]); // for manage panel
   const [removingStaff, setRemovingStaff] = useState(null); // id
   const [showRoster, setShowRoster] = useState(false); // toggle roster list
+  const [editingStaffId, setEditingStaffId] = useState(null);
+  const [editingStaffName, setEditingStaffName] = useState('');
 
   // Years array
   const years = [2026, 2027, 2028, 2029, 2030];
@@ -306,13 +308,34 @@ export default function StaffDashboard({ user, onLogout }) {
     try {
       await api.updateStaffMember(member.id, { name: member.name, active: 0 });
       setSuccess(`"${member.name}" removed from the staff roster.`);
-      const list = await api.getStaffMembers(true);
-      setRosterStaff(list);
-      setStaffList(list);
+      const activeList = await api.getStaffMembers(true);
+      setRosterStaff(activeList);
+      setStaffList(activeList);
     } catch (err) {
       setError('Failed to remove staff member: ' + err.message);
     } finally {
       setRemovingStaff(null);
+    }
+  };
+
+  // Save edited staff member name
+  const handleSaveEditStaffName = async (staffId, active) => {
+    if (!editingStaffName.trim()) {
+      setError('Staff member name cannot be empty.');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    try {
+      await api.updateStaffMember(staffId, { name: editingStaffName.trim(), active });
+      setSuccess(`Staff member name updated to "${editingStaffName.trim()}"!`);
+      setEditingStaffId(null);
+      setEditingStaffName('');
+      const activeList = await api.getStaffMembers(true);
+      setRosterStaff(activeList);
+      setStaffList(activeList);
+    } catch (err) {
+      setError('Failed to update staff member name: ' + err.message);
     }
   };
 
@@ -366,7 +389,7 @@ export default function StaffDashboard({ user, onLogout }) {
           setShowRoster(prev => !prev);
         }}
       >
-        {showRoster ? '▲ Hide Roster' : `▼ View & Remove Staff (${rosterStaff.length} active)`}
+        {showRoster ? '▲ Hide Roster' : `▼ View & Edit Staff (${rosterStaff.length} active)`}
       </button>
 
       {showRoster && (
@@ -384,7 +407,51 @@ export default function StaffDashboard({ user, onLogout }) {
                   fontSize: '14px'
                 }}>
                   <div className="roster-avatar-initials">{initials}</div>
-                  <span style={{ fontWeight: '600', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {editingStaffId === s.id ? (
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          style={{ fontSize: '13px', padding: '2px 6px', minHeight: '30px' }}
+                          value={editingStaffName}
+                          onChange={(e) => setEditingStaffName(e.target.value)}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-success"
+                          style={{ minHeight: '30px', padding: '0 10px', fontSize: '12px' }}
+                          onClick={() => handleSaveEditStaffName(s.id, s.active)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ minHeight: '30px', padding: '0 10px', fontSize: '12px' }}
+                          onClick={() => { setEditingStaffId(null); setEditingStaffName(''); }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{s.name}</span>
+                    )}
+                  </div>
+
+                  {editingStaffId !== s.id && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ minHeight: '30px', padding: '0 10px', fontSize: '12px' }}
+                      onClick={() => { setEditingStaffId(s.id); setEditingStaffName(s.name); }}
+                    >
+                      ✏️ Edit
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     className="btn btn-danger"
@@ -712,7 +779,48 @@ export default function StaffDashboard({ user, onLogout }) {
                       <div key={member.id} className={cardClass}>
                         <div className="student-info">
                           <div className="student-avatar">{initials}</div>
-                          <div className="student-name-text">{member.name}</div>
+                          <div className="student-name-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {editingStaffId === member.id ? (
+                              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  style={{ fontSize: '13px', padding: '2px 6px', height: '28px' }}
+                                  value={editingStaffName}
+                                  onChange={(e) => setEditingStaffName(e.target.value)}
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-success"
+                                  style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                  onClick={() => handleSaveEditStaffName(member.id, member.active)}
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                  onClick={() => { setEditingStaffId(null); setEditingStaffName(''); }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span>{member.name}</span>
+                                <button
+                                  type="button"
+                                  title="Edit staff member name"
+                                  onClick={(e) => { e.stopPropagation(); setEditingStaffId(member.id); setEditingStaffName(member.name); }}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', opacity: 0.7, padding: '2px' }}
+                                >
+                                  ✏️
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                         <div className="attendance-toggle">
                           <button

@@ -547,13 +547,17 @@ app.post('/api/students', authenticate, async (req, res) => {
   }
 });
 
-// 4. Update Student Route (Toggle active state)
+// 4. Update Student Route (Toggle active state or edit name)
 app.put('/api/students/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const { name, active } = req.body;
 
   if (active === undefined) {
     return res.status(400).json({ message: 'Active status is required.' });
+  }
+
+  if (name !== undefined && !name.trim()) {
+    return res.status(400).json({ message: 'Student name cannot be empty.' });
   }
 
   try {
@@ -571,7 +575,7 @@ app.put('/api/students/:id', authenticate, async (req, res) => {
     );
 
     const statusText = updatedActive === 1 ? 'ACTIVE' : 'INACTIVE';
-    logNotification(`Student "${updatedName}" status updated to ${statusText} by ${req.user.name}.`, 'info');
+    logNotification(`Student "${updatedName}" record updated by ${req.user.name}.`, 'info');
 
     res.json({ id: parseInt(id), name: updatedName, active: updatedActive });
   } catch (err) {
@@ -640,13 +644,17 @@ app.post('/api/staff-members', authenticate, requireRole(['staff', 'owner']), as
   }
 });
 
-// 3. Update Staff Member Status (Toggle Active/Inactive)
+// 3. Update Staff Member Status (Toggle Active/Inactive or Edit Name)
 app.put('/api/staff-members/:id', authenticate, requireRole(['staff', 'owner']), async (req, res) => {
   const { id } = req.params;
   const { name, active } = req.body;
 
   if (active === undefined) {
     return res.status(400).json({ message: 'Active status is required.' });
+  }
+
+  if (name !== undefined && !name.trim()) {
+    return res.status(400).json({ message: 'Staff member name cannot be empty.' });
   }
 
   try {
@@ -664,7 +672,7 @@ app.put('/api/staff-members/:id', authenticate, requireRole(['staff', 'owner']),
     );
 
     const statusText = updatedActive === 1 ? 'ACTIVE' : 'INACTIVE';
-    logNotification(`Staff member "${updatedName}" status updated to ${statusText} by ${req.user.name}.`, 'info');
+    logNotification(`Staff member "${updatedName}" record updated by ${req.user.name}.`, 'info');
 
     res.json({ id: parseInt(id), name: updatedName, active: updatedActive });
   } catch (err) {

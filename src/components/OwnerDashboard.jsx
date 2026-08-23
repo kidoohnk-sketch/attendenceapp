@@ -51,6 +51,8 @@ export default function OwnerDashboard({ user, onLogout }) {
   const [newStudentTeacherId, setNewStudentTeacherId] = useState('');
   const [updatingStudent, setUpdatingStudent] = useState(null);
   const [deletingStudentPermanently, setDeletingStudentPermanently] = useState(null);
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [editingStudentName, setEditingStudentName] = useState('');
 
   // 5. Staff Management & Staff Attendance (For Principal / Owner)
   const [selectedStaffDate, setSelectedStaffDate] = useState(getLocalDateString());
@@ -64,6 +66,8 @@ export default function OwnerDashboard({ user, onLogout }) {
   const [deletingStaff, setDeletingStaff] = useState(null);
   const [submittingStaffAttendance, setSubmittingStaffAttendance] = useState(false);
   const [showStaffRoster, setShowStaffRoster] = useState(false);
+  const [editingStaffId, setEditingStaffId] = useState(null);
+  const [editingStaffName, setEditingStaffName] = useState('');
 
   // 6. Holiday Management
   const [holidays, setHolidays] = useState([]);
@@ -474,6 +478,50 @@ export default function OwnerDashboard({ user, onLogout }) {
     }
   };
 
+  // Handle Save Edited Student Name
+  const handleSaveEditStudentName = async (studentId, active) => {
+    if (!editingStudentName.trim()) {
+      setError('Student name cannot be empty.');
+      return;
+    }
+    setUpdatingStudent(studentId);
+    setError('');
+    setSuccess('');
+    try {
+      await api.updateStudent(studentId, { name: editingStudentName.trim(), active });
+      setSuccess(`Student name updated to "${editingStudentName.trim()}"!`);
+      setEditingStudentId(null);
+      setEditingStudentName('');
+      await loadStudents();
+    } catch (err) {
+      setError('Failed to update student name: ' + err.message);
+    } finally {
+      setUpdatingStudent(null);
+    }
+  };
+
+  // Handle Save Edited Staff Name
+  const handleSaveEditStaffName = async (staffId, active) => {
+    if (!editingStaffName.trim()) {
+      setError('Staff member name cannot be empty.');
+      return;
+    }
+    setUpdatingStaff(staffId);
+    setError('');
+    setSuccess('');
+    try {
+      await api.updateStaffMember(staffId, { name: editingStaffName.trim(), active });
+      setSuccess(`Staff member name updated to "${editingStaffName.trim()}"!`);
+      setEditingStaffId(null);
+      setEditingStaffName('');
+      await loadStaffData(selectedStaffDate);
+    } catch (err) {
+      setError('Failed to update staff member name: ' + err.message);
+    } finally {
+      setUpdatingStaff(null);
+    }
+  };
+
   // Handle Permanent Student Delete
   const handleDeleteStudentPermanently = async (student) => {
     if (!window.confirm(`⚠️ PERMANENT DELETE WARNING:\n\nAre you sure you want to permanently delete "${student.name}"? This will delete all past attendance records for this student.`)) return;
@@ -730,13 +778,56 @@ export default function OwnerDashboard({ user, onLogout }) {
               <div className="student-manage-list">
                 {rosterStaff.map(member => (
                   <div key={member.id} className={`student-manage-item ${member.active === 0 ? 'inactive' : ''}`}>
-                    <div>
-                      <span style={{ fontWeight: '700', fontSize: '16px' }}>{member.name}</span>
-                      <span style={{ marginLeft: '10px', fontSize: '12px', color: member.active === 1 ? 'var(--success)' : 'var(--danger)' }}>
-                        ({member.active === 1 ? 'Active' : 'Inactive'})
-                      </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {editingStaffId === member.id ? (
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            className="form-control"
+                            style={{ fontSize: '14px', padding: '4px 8px', minHeight: '34px' }}
+                            value={editingStaffName}
+                            onChange={(e) => setEditingStaffName(e.target.value)}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-success"
+                            style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                            onClick={() => handleSaveEditStaffName(member.id, member.active)}
+                            disabled={updatingStaff === member.id}
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                            onClick={() => { setEditingStaffId(null); setEditingStaffName(''); }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <span style={{ fontWeight: '700', fontSize: '16px' }}>{member.name}</span>
+                          <span style={{ marginLeft: '10px', fontSize: '12px', color: member.active === 1 ? 'var(--success)' : 'var(--danger)' }}>
+                            ({member.active === 1 ? 'Active' : 'Inactive'})
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
+                      {editingStaffId !== member.id && (
+                        <button
+                          type="button"
+                          onClick={() => { setEditingStaffId(member.id); setEditingStaffName(member.name); }}
+                          className="btn btn-secondary"
+                          style={{ minHeight: '32px', fontSize: '12px', padding: '0 12px' }}
+                        >
+                          ✏️ Edit Name
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => handleToggleStaffActive(member)}
@@ -807,7 +898,48 @@ export default function OwnerDashboard({ user, onLogout }) {
                           backgroundColor: 'var(--bg-primary)'
                         }}
                       >
-                        <span style={{ fontWeight: '700', fontSize: '16px' }}>{member.name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {editingStaffId === member.id ? (
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="form-control"
+                                style={{ fontSize: '13px', padding: '2px 6px', height: '28px' }}
+                                value={editingStaffName}
+                                onChange={(e) => setEditingStaffName(e.target.value)}
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-success"
+                                style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                onClick={() => handleSaveEditStaffName(member.id, member.active)}
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                onClick={() => { setEditingStaffId(null); setEditingStaffName(''); }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span style={{ fontWeight: '700', fontSize: '16px' }}>{member.name}</span>
+                              <button
+                                type="button"
+                                title="Edit staff member name"
+                                onClick={(e) => { e.stopPropagation(); setEditingStaffId(member.id); setEditingStaffName(member.name); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', opacity: 0.7, padding: '2px' }}
+                              >
+                                ✏️
+                              </button>
+                            </>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             type="button"
@@ -896,7 +1028,48 @@ export default function OwnerDashboard({ user, onLogout }) {
                           backgroundColor: 'var(--bg-primary)'
                         }}
                       >
-                        <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {editingStudentId === student.id ? (
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="form-control"
+                                style={{ fontSize: '13px', padding: '2px 6px', height: '28px' }}
+                                value={editingStudentName}
+                                onChange={(e) => setEditingStudentName(e.target.value)}
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-success"
+                                style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                onClick={() => handleSaveEditStudentName(student.id, student.active)}
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ minHeight: '28px', padding: '0 8px', fontSize: '11px' }}
+                                onClick={() => { setEditingStudentId(null); setEditingStudentName(''); }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
+                              <button
+                                type="button"
+                                title="Edit student name"
+                                onClick={(e) => { e.stopPropagation(); setEditingStudentId(student.id); setEditingStudentName(student.name); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', opacity: 0.7, padding: '2px' }}
+                              >
+                                ✏️
+                              </button>
+                            </>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             type="button"
@@ -1115,14 +1288,57 @@ export default function OwnerDashboard({ user, onLogout }) {
                   </label>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      Added: {new Date(student.date_added).toLocaleDateString()}
-                    </div>
+                    {editingStudentId === student.id ? (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          style={{ fontSize: '14px', padding: '4px 8px', minHeight: '34px' }}
+                          value={editingStudentName}
+                          onChange={(e) => setEditingStudentName(e.target.value)}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-success"
+                          style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                          onClick={() => handleSaveEditStudentName(student.id, student.active)}
+                          disabled={updatingStudent === student.id}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                          onClick={() => { setEditingStudentId(null); setEditingStudentName(''); }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <span style={{ fontWeight: '700', fontSize: '16px' }}>{student.name}</span>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          Added: {new Date(student.date_added).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Section Assignment Dropdown */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {editingStudentId !== student.id && (
+                      <button
+                        type="button"
+                        onClick={() => { setEditingStudentId(student.id); setEditingStudentName(student.name); }}
+                        className="btn btn-secondary"
+                        style={{ minHeight: '34px', fontSize: '13px', padding: '0 12px' }}
+                      >
+                        ✏️ Edit Name
+                      </button>
+                    )}
+
                     <select
                       className="form-control"
                       style={{ fontSize: '13px', padding: '4px 8px', minHeight: '34px', width: 'auto' }}
